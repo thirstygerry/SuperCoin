@@ -1,0 +1,9 @@
+Building SuperCoin
+
+See doc/readme-qt.rst for instructions on building SuperCoin QT,
+the intended-for-end-users, nice-graphical-interface, reference
+implementation of SuperCoin.
+
+See doc/build-*.txt for instructions on building SuperCoind,
+the intended-for-services, no-graphical-interface, reference
+implementation of SuperCoin.
