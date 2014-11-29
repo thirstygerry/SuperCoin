@@ -173,7 +173,16 @@
            <string notr="true"/>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayoutCoinControl5">
-           <property name="margin">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
             <number>0</number>
            </property>
            <item>
@@ -598,7 +607,7 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayoutCoinControl7" stretch="0,0,0">
+         <layout class="QHBoxLayout" name="horizontalLayoutCoinControl7" stretch="0,0,0,0">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -615,7 +624,7 @@
            <widget class="QCheckBox" name="checkBoxAnonymousSend">
             <property name="maximumSize">
              <size>
-              <width>15</width>
+              <width>17</width>
               <height>16777215</height>
              </size>
             </property>
@@ -623,6 +632,22 @@
              <string/>
             </property>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>10</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
           <item>
            <widget class="QLabel" name="label_2">
@@ -677,12 +702,21 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>830</width>
-        <height>146</height>
+        <width>824</width>
+        <height>112</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
