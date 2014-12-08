@@ -1128,7 +1128,64 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
 {
     boost::filesystem::ifstream streamConfig(GetConfigFile());
     if (!streamConfig.good())
-        return; // No bitcoin.conf file is OK
+	{
+		boost::filesystem::path ConfPath;
+        ConfPath = GetDefaultDataDir() / "supercoin.conf";
+		FILE* ConfFile = fopen(ConfPath.string().c_str(), "w");
+		fprintf(ConfFile, "testnet=0\n");
+		fprintf(ConfFile, "listen=1\n");
+		fprintf(ConfFile, "server=1\n");
+		fprintf(ConfFile, "daemon=1\n");
+		fprintf(ConfFile, "maxconnections=300\n");
+		fprintf(ConfFile, "rpcuser=yourusername\n");
+		fprintf(ConfFile, "addnode=92.222.19.210
+		fprintf(ConfFile, "addnode=198.203.29.42\n");
+		fprintf(ConfFile, "addnode=103.6.85.64\n");
+		fprintf(ConfFile, "addnode=60.240.49.38\n");
+		fprintf(ConfFile, "addnode=93.104.211.172\n");
+		fprintf(ConfFile, "addnode=213.136.75.35\n");
+		fprintf(ConfFile, "addnode=2001:41d0:52:cff::116b\n");
+		fprintf(ConfFile, "addnode=99.248.140.178\n");
+		fprintf(ConfFile, "addnode=142.54.184.58\n");
+		fprintf(ConfFile, "addnode=188.126.9.58\n");
+		fprintf(ConfFile, "addnode=95.154.73.69\n");
+		fprintf(ConfFile, "addnode=76.68.232.76\n");
+		fprintf(ConfFile, "addnode=107.23.41.228\n");
+		fprintf(ConfFile, "addnode=176.214.79.178\n");
+		fprintf(ConfFile, "addnode=213.21.33.12\n");
+		fprintf(ConfFile, "addnode=81.218.163.165\n");
+		fprintf(ConfFile, "addnode=162.157.137.136\n");
+		fprintf(ConfFile, "addnode=204.11.237.74\n");
+		fprintf(ConfFile, "addnode=50.128.154.237\n");
+		fprintf(ConfFile, "addnode=207.102.89.120\n");
+		fprintf(ConfFile, "addnode=89.160.198.160\n");
+		fprintf(ConfFile, "addnode=95.150.126.90\n");
+		fprintf(ConfFile, "addnode=178.55.181.202\n");
+		fprintf(ConfFile, "addnode=82.108.187.18\n");
+		fprintf(ConfFile, "addnode=86.82.30.234\n");
+		fprintf(ConfFile, "addnode=171.100.22.15\n");
+		fprintf(ConfFile, "addnode=76.108.67.104\n");
+		fprintf(ConfFile, "addnode=107.206.155.40\n");
+		fprintf(ConfFile, "addnode=14.105.120.187\n");
+		fprintf(ConfFile, "addnode=115.166.32.1\n");
+		fprintf(ConfFile, "addnode=178.124.167.131\n");
+		fprintf(ConfFile, "addnode=110.77.228.107\n");
+		fprintf(ConfFile, "addnode=80.141.49.208\n");
+		fprintf(ConfFile, "addnode=174.100.65.197\n");
+		fprintf(ConfFile, "addnode=83.84.163.166\n");
+		fprintf(ConfFile, "addnode=71.94.45.245\n");
+		fprintf(ConfFile, "addnode=87.178.192.190\n");
+		fprintf(ConfFile, "addnode=212.79.110.113\n");
+		fprintf(ConfFile, "addnode=112.142.46.247\n");
+		fprintf(ConfFile, "addnode=69.144.53.251\n");
+		fprintf(ConfFile, "addnode=109.162.93.179\n");
+		fprintf(ConfFile, "addnode=78.29.123.200\n");
+		fprintf(ConfFile, "addnode=62.122.207.14\n");
+		fprintf(ConfFile, "rpcport=19391\n");
+		fprintf(ConfFile, "rpcconnect=127.0.0.1\n");
+		fclose(ConfFile);
+	}
+
 
     set<string> setOptions;
     setOptions.insert("*");
