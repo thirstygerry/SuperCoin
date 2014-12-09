@@ -5,8 +5,7 @@ INCLUDEPATH += src src/json src/qt
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
-CONFIG += staticlib
-QT += widgets network opengl sql xml testlib dbus
+QT += core gui network widgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 lessThan(QT_MAJOR_VERSION, 5): CONFIG += static
@@ -16,14 +15,18 @@ greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
     DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
 }
+ 
+# UNCOMMENT THIS SECTION TO BUILD ON WINDOWS
+# Change paths if needed, these use the foocoin/deps.git repository locations
+
 win32 {
-BOOST_LIB_SUFFIX=-mgw49-mt-s-1_55
-BOOST_INCLUDE_PATH=C:/deps/boost_1_55_0
-BOOST_LIB_PATH=C:/deps/boost_1_55_0/stage/lib
+BOOST_LIB_SUFFIX=-mgw48-mt-s-1_53
+BOOST_INCLUDE_PATH=C:/deps/boost_1_53_0
+BOOST_LIB_PATH=C:/deps/boost_1_53_0/stage/lib
 BDB_INCLUDE_PATH=C:/deps/db-4.8.30.NC/build_unix
 BDB_LIB_PATH=C:/deps/db-4.8.30.NC/build_unix
-OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.1h/include
-OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1h
+OPENSSL_INCLUDE_PATH=C:/deps/openssl-1.0.1g/include
+OPENSSL_LIB_PATH=C:/deps/openssl-1.0.1g
 MINIUPNPC_INCLUDE_PATH=C:/deps/
 MINIUPNPC_LIB_PATH=C:/deps/miniupnpc
 LIBPNG_INCLUDE_PATH=C:/deps/libpng-1.6.9
@@ -31,6 +34,7 @@ LIBPNG_LIB_PATH=C:/deps/libpng-1.6.9/.libs
 QRENCODE_INCLUDE_PATH=C:/deps/qrencode-3.4.3
 QRENCODE_LIB_PATH=C:/deps/qrencode-3.4.3/.libs
 }
+
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
 # for boost thread win32 with _win32 sufix
