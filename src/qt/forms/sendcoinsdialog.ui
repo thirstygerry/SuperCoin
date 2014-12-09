@@ -104,7 +104,21 @@
           <item>
            <widget class="QPushButton" name="pushButtonCoinControl">
             <property name="styleSheet">
-             <string notr="true"/>
+             <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
             </property>
             <property name="text">
              <string>Inputs...</string>
@@ -702,8 +716,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>830</width>
-        <height>140</height>
+        <width>824</width>
+        <height>102</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -750,6 +764,23 @@
        <property name="toolTip">
         <string>Send to multiple recipients at once</string>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+       </property>
        <property name="text">
         <string>Add &amp;Recipient</string>
        </property>
@@ -772,6 +803,23 @@
        </property>
        <property name="toolTip">
         <string>Remove all transaction fields</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
        </property>
        <property name="text">
         <string>Clear &amp;All</string>
@@ -844,12 +892,29 @@
       <widget class="QPushButton" name="sendButton">
        <property name="minimumSize">
         <size>
-         <width>150</width>
+         <width>88</width>
          <height>0</height>
         </size>
        </property>
        <property name="toolTip">
         <string>Confirm the send action</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
        </property>
        <property name="text">
         <string>S&amp;end</string>

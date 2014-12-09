@@ -379,7 +379,7 @@
         <height>41</height>
        </rect>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayoutPanel" stretch="0,0,0,0,0">
+      <layout class="QHBoxLayout" name="horizontalLayoutPanel" stretch="0,0,0,0">
        <property name="spacing">
         <number>14</number>
        </property>
@@ -390,6 +390,23 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
          </property>
          <property name="text">
           <string>(un)select all</string>
@@ -526,6 +543,23 @@
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

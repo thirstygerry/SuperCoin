@@ -1138,9 +1138,9 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
 		fprintf(ConfFile, "daemon=1\n");
 		fprintf(ConfFile, "maxconnections=300\n");
 		fprintf(ConfFile, "rpcuser=yourusername\n");
-		fprintf(ConfFile, "rpcpassword=yourpassword\n");
+        fprintf(ConfFile, "rpcpassword=yourpassword\n");
         fprintf(ConfFile, "addnode=92.222.19.210\n");
-		fprintf(ConfFile, "addnode=198.203.29.42\n");
+        fprintf(ConfFile, "addnode=198.203.29.42\n");
 		fprintf(ConfFile, "addnode=103.6.85.64\n");
 		fprintf(ConfFile, "addnode=60.240.49.38\n");
 		fprintf(ConfFile, "addnode=93.104.211.172\n");

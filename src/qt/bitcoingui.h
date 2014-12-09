@@ -94,6 +94,10 @@ private:
     QAction *lockWalletAction;
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
+	
+    QWidget *wId;
+    QWidget *wId2;
+    QWidget *wId3;
 
     QSystemTrayIcon *trayIcon;
     Notificator *notificator;
@@ -108,6 +112,7 @@ private:
     void createMenuBar();
     /** Create the toolbars */
     void createToolBars();
+	 void createToolBars2();
     /** Create system tray (notification) icon */
     void createTrayIcon();
 

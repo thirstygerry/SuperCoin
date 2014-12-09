@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>760</width>
+    <width>984</width>
     <height>380</height>
    </rect>
   </property>
@@ -62,6 +62,23 @@
        <property name="toolTip">
         <string>Create a new address</string>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+       </property>
        <property name="text">
         <string>&amp;New Address</string>
        </property>
@@ -76,6 +93,23 @@
        <property name="toolTip">
         <string>Copy the currently selected address to the system clipboard</string>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+       </property>
        <property name="text">
         <string>&amp;Copy Address</string>
        </property>
@@ -87,6 +121,23 @@
      </item>
      <item>
       <widget class="QPushButton" name="showQRCode">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+       </property>
        <property name="text">
         <string>Show &amp;QR Code</string>
        </property>
@@ -100,6 +151,23 @@
       <widget class="QPushButton" name="signMessage">
        <property name="toolTip">
         <string>Sign a message to prove you own a SuperCoin address</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
        </property>
        <property name="text">
         <string>Sign &amp;Message</string>
@@ -115,6 +183,23 @@
        <property name="toolTip">
         <string>Verify a message to ensure it was signed with a specified SuperCoin address</string>
        </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+       </property>
        <property name="text">
         <string>&amp;Verify Message</string>
        </property>
@@ -128,6 +213,23 @@
       <widget class="QPushButton" name="deleteButton">
        <property name="toolTip">
         <string>Delete the currently selected address from the list</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
        </property>
        <property name="text">
         <string>&amp;Delete</string>
@@ -158,6 +260,23 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
        </property>
        <property name="standardButtons">
         <set>QDialogButtonBox::Ok</set>

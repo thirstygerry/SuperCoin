@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>740</width>
-    <height>450</height>
+    <height>539</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -324,6 +324,23 @@
          <property name="toolTip">
           <string>Open the SuperCoin debug log file from the current data directory. This can take a few seconds for large log files.</string>
          </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
+         </property>
          <property name="text">
           <string>&amp;Open</string>
          </property>
@@ -349,6 +366,23 @@
         <widget class="QPushButton" name="showCLOptionsButton">
          <property name="toolTip">
           <string>Show the SuperCoin-Qt help message to get a list with possible SuperCoin command-line options.</string>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+     
+	color : rgb(0,0,0);
+     border-style: outset;
+     border-width: 2px;
+     border-radius: 8px;
+     border-color: rgb(160, 46, 47);
+     font: bold 10px;
+     min-width: 6em;
+     padding: 6px;
+ }
+QPushButton:pressed {
+     background-color: rgb(160, 46, 47);
+     border-style: inset;
+ }</string>
          </property>
          <property name="text">
           <string>&amp;Show</string>

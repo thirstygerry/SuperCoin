@@ -79,6 +79,18 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 {
     resize(850, 550);
     setWindowTitle(tr("SuperCoin") + " - " + tr("Wallet"));
+	
+    qApp->setStyleSheet("QMainWindow { background:rgb(220,220,220);font-family:'Proxima Nova Rg'; }" //content
+
+                               "#toolbar2 { border:none;width:28px;background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(28,29,33)) }"
+                                "QMenu { background: rgb(115,115,115); color:white; padding-bottom:10px; } "
+                                "QMenu::item { color:white; background-color: transparent; } "
+                                "QMenu::item:selected { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(28,29,33)); }"
+                                "QMenuBar { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(103,128,240));  color:white; }"
+	                        "QMenuBar::item { font-size:12px;padding-bottom:12px;padding-top:12px;padding-left:15px;padding-right:15px;color:white; background-color: transparent; }"
+                                "QMenuBar::item:selected { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(35,35,35), stop: 1 rgb(0, 141, 210)); }"
+                        );
+	
 #ifndef Q_OS_MAC
     qApp->setWindowIcon(QIcon(":icons/bitcoin"));
     setWindowIcon(QIcon(":icons/bitcoin"));
@@ -96,7 +108,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     createMenuBar();
 
     // Create the toolbars
-    createToolBars();
+    createToolBars2();
 
     // Create the tray icon (or setup the dock icon)
     createTrayIcon();
@@ -358,6 +370,67 @@ void BitcoinGUI::createToolBars()
     toolbar2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolbar2->addAction(exportAction);
 }
+
+void BitcoinGUI::createToolBars2()
+{
+    QLabel *mylabel = new QLabel (this);
+   mylabel->setPixmap(QPixmap(":images/head"));
+   mylabel->show();
+
+    QToolBar *toolbar = addToolBar(tr("Tabs toolbar"));
+    toolbar->setObjectName("toolbar");
+    addToolBar(Qt::LeftToolBarArea,toolbar);
+    toolbar->setOrientation(Qt::Vertical);
+    toolbar->setMovable( false );
+    toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->setIconSize(QSize(50,25));
+    toolbar->addWidget(mylabel);
+    toolbar->addAction(overviewAction);
+    toolbar->addAction(sendCoinsAction);
+    toolbar->addAction(receiveCoinsAction);
+    toolbar->addAction(historyAction);
+    toolbar->addAction(addressBookAction);
+
+    toolbar->addAction(optionsAction);
+
+    QWidget* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    toolbar->addWidget(spacer);
+    spacer->setObjectName("spacer");
+    toolbar->setStyleSheet(
+    "#toolbar { font-weight:600;border:1;height:100%;padding-top:20px; padding:15px; background: rgb(220,220,220); text-align:center; color: white; min-width:130px;max-width:130px;}" //menu
+
+    "QToolBar QToolButton:checked {background:rgba(28,29,33,100);}"
+    "QToolBar QToolButton:pressed {background-color: rgb(160, 46, 47);border-style: inset;}"
+    "QToolBar QToolButton {border-style: outset;border-width: 2px;border-radius: 8px;border-color: rgb(160, 46, 47);font: bold 10px;width:100%;padding: 6px;}");
+    wId = new QWidget(this);
+    wId3 = new QWidget(this);
+    QToolBar *toolbars = addToolBar(tr("Settings2"));
+    addToolBar(Qt::RightToolBarArea,toolbars);
+    toolbars->setOrientation(Qt::Horizontal);
+    toolbars->setMovable( false );
+    toolbars->setStyleSheet("QToolBar QToolButton {border:0px;margin-right:3px} QToolBar{ border:0px; }");
+    toolbars->setIconSize(QSize(102,25));
+    QHBoxLayout *vbox5 = new QHBoxLayout();
+    vbox5->addWidget(toolbars);
+    vbox5->setContentsMargins(0,0,0,0);
+    wId3->setFixedSize(250,30);
+    wId3->move(260,10);
+    wId3->setLayout(vbox5);
+    wId3->setFocus();
+    wId3->raise();
+    QMenu *menu = new QMenu(tr("Mini"));
+    menu->setStyleSheet("border:none;background:none;");
+    menu->addAction(toggleHideAction);
+    menu->menuAction()->setIcon(QIcon(":/icons/key"));
+    QHBoxLayout *vbox3 = new QHBoxLayout();
+    vbox3->setContentsMargins(0,0,0,0);
+    wId->setFixedSize(120,40);
+    wId->move(915,1);
+    wId->setLayout(vbox3);
+    wId->setFocus();
+}
+
 
 void BitcoinGUI::setClientModel(ClientModel *clientModel)
 {
