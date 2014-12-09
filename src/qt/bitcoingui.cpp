@@ -83,12 +83,12 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     qApp->setStyleSheet("QMainWindow { background:rgb(220,220,220);font-family:'Proxima Nova Rg'; }" //content
 
                                "#toolbar2 { border:none;width:28px;background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(28,29,33)) }"
-                                "QMenu { background: rgb(115,115,115); color:white; padding-bottom:10px; } "
-                                "QMenu::item { color:white; background-color: transparent; } "
+                                "QMenu { background: rgb(115,115,115);  padding-bottom:10px; } "
+                                "QMenu::item {  background-color: transparent; } "
                                 "QMenu::item:selected { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(28,29,33)); }"
-                                "QMenuBar { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(103,128,240));  color:white; }"
-	                        "QMenuBar::item { font-size:12px;padding-bottom:12px;padding-top:12px;padding-left:15px;padding-right:15px;color:white; background-color: transparent; }"
-                                "QMenuBar::item:selected { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(35,35,35), stop: 1 rgb(0, 141, 210)); }"
+                                "QMenuBar { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(195,205,250), stop: 1 rgb(103,128,240));   }"
+	                        "QMenuBar::item { font-size:12px;padding-bottom:12px;padding-top:12px;padding-left:15px;padding-right:15px;background-color: transparent; }"
+                                "QMenuBar::item:selected { background-color:qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,stop: 0 rgb(220,220,220), stop: 1 rgb(220, 220, 220)); }"
                         );
 	
 #ifndef Q_OS_MAC
@@ -398,7 +398,7 @@ void BitcoinGUI::createToolBars2()
     toolbar->addWidget(spacer);
     spacer->setObjectName("spacer");
     toolbar->setStyleSheet(
-    "#toolbar { font-weight:600;border:1;height:100%;padding-top:20px; padding:15px; background: rgb(220,220,220); text-align:center; color: white; min-width:130px;max-width:130px;}" //menu
+    "#toolbar { font-weight:600;border:1;height:100%;padding-top:20px; padding:15px; background: rgb(220,220,220); text-align:center;  min-width:130px;max-width:130px;}" //menu
 
     "QToolBar QToolButton:checked {background:rgba(28,29,33,100);}"
     "QToolBar QToolButton:pressed {background-color: rgb(160, 46, 47);border-style: inset;}"
