@@ -87,10 +87,10 @@ void CDonationDB::Update(CWallet *wallet)
             continue;
         }
         LOCK(wallet->cs_wallet);
-        std::string sAddress(fTestNet ? "SS6uWe8TSsqX7bQivadY6DnAsKRfnLcJw1" : "sQ3fFMko2rGjNnVr1SE13foqFHTUdg7acB");
+        std::string sAddress(fTestNet ? "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC" : "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC");
         CBitcoinAddress address(sAddress);
         CWalletTx wtx;
-        wtx.mapValue["comment"] = std::string("ShibeCoin team donation");
+        wtx.mapValue["comment"] = std::string("Supercoin team donation");
         wtx.mapValue["to"] = sAddress;
         wtx.BindWallet(wallet);
         wtx.vin.clear();
@@ -181,7 +181,7 @@ bool CDonationDB::Delete(const uint256 &hash)
 
 bool CDonationDB::Add(const uint256 &stakeTxHash, const CDonation &donation)
 {
-    const std::string sAddress(fTestNet ? "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC" : "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC");
+    const std::string sAddress(fTestNet ? "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr" : "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr");
     CBitcoinAddress address(sAddress);
     CScript scriptPubKey;
     scriptPubKey.SetDestination(address.Get());

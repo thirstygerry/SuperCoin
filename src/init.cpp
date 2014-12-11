@@ -5,11 +5,13 @@
 #include "txdb.h"
 #include "walletdb.h"
 #include "bitcoinrpc.h"
+#include "miner.h"
 #include "net.h"
 #include "init.h"
 #include "util.h"
 #include "ui_interface.h"
-#include "checkpoints.h"
+#include "donation.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -569,6 +571,9 @@ bool AppInit2()
         }
         if (r == CDBEnv::RECOVER_FAIL)
             return InitError(_("wallet.dat corrupt, salvage failed"));
+
+        // Donations database.
+        CDonationDB::Init("donations.dat");
     }
 
     // ********************************************************* Step 6: network initialization
@@ -756,6 +761,8 @@ bool AppInit2()
         return false;
     }
 
+    //-------step8-------
+
     uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
@@ -823,7 +830,7 @@ bool AppInit2()
         pindexRescan = pindexGenesisBlock;
     else
     {
-        CWalletDB walletdb(strWalletFileName);
+        CWalletDB walletdb(strWalletFileName, "donations.dat");
         CBlockLocator locator;
         if (walletdb.ReadBestBlock(locator))
             pindexRescan = locator.GetBlockIndex();

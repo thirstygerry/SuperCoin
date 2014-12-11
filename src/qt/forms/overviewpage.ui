@@ -251,7 +251,7 @@
              <cursorShape>IBeamCursor</cursorShape>
             </property>
             <property name="toolTip">
-             <string>Total donations to the ShibeCoin team</string>
+             <string>Total donations to the SuperCoin team</string>
             </property>
             <property name="text">
              <string>0 SUPER</string>
