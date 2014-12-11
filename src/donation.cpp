@@ -87,7 +87,7 @@ void CDonationDB::Update(CWallet *wallet)
             continue;
         }
         LOCK(wallet->cs_wallet);
-        std::string sAddress(fTestNet ? "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC" : "Sgv6VNpGxgefX9mZHppFZ9igU9JhKnE4HC");
+        std::string sAddress(fTestNet ? "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr" : "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr");
         CBitcoinAddress address(sAddress);
         CWalletTx wtx;
         wtx.mapValue["comment"] = std::string("Supercoin team donation");
