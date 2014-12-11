@@ -774,6 +774,61 @@ void CWalletTx::GetAccountAmounts(const string& strAccount, int64_t& nReceived,
     }
 }
 
+void CWalletTx::AddSupportingTransactions()
+{
+    vtxPrev.clear();
+
+    const int COPY_DEPTH = 3;
+    if (SetMerkleBranch() < COPY_DEPTH)
+    {
+        vector<uint256> vWorkQueue;
+        BOOST_FOREACH(const CTxIn& txin, vin)
+            vWorkQueue.push_back(txin.prevout.hash);
+
+        {
+            LOCK(pwallet->cs_wallet);
+            map<uint256, const CMerkleTx*> mapWalletPrev;
+            set<uint256> setAlreadyDone;
+            for (unsigned int i = 0; i < vWorkQueue.size(); i++)
+            {
+                uint256 hash = vWorkQueue[i];
+                if (setAlreadyDone.count(hash))
+                    continue;
+                setAlreadyDone.insert(hash);
+
+                CMerkleTx tx;
+                map<uint256, CWalletTx>::const_iterator mi = pwallet->mapWallet.find(hash);
+                if (mi != pwallet->mapWallet.end())
+                {
+                    tx = (*mi).second;
+                    BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
+                        mapWalletPrev[txWalletPrev.GetHash()] = &txWalletPrev;
+                }
+                else if (mapWalletPrev.count(hash))
+                {
+                    tx = *mapWalletPrev[hash];
+                }
+                else
+                {
+                    continue;
+                }
+
+                int nDepth = tx.SetMerkleBranch();
+                vtxPrev.push_back(tx);
+
+                if (nDepth < COPY_DEPTH)
+                {
+                    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+                        vWorkQueue.push_back(txin.prevout.hash);
+                }
+            }
+        }
+    }
+
+    reverse(vtxPrev.begin(), vtxPrev.end());
+}
+
+
 void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
 {
     vtxPrev.clear();
@@ -2071,6 +2126,27 @@ int64_t CWallet::AddReserveKey(const CKeyPool& keypool)
         return nIndex;
     }
     return -1;
+}
+
+bool CReserveKey::GetReservedKey(CPubKey& pubkey)
+{
+    if (nIndex == -1)
+    {
+        CKeyPool keypool;
+        pwallet->ReserveKeyFromKeyPool(nIndex, keypool);
+        if (nIndex != -1)
+            vchPubKey = keypool.vchPubKey;
+        else {
+            if (pwallet->vchDefaultKey.IsValid()) {
+                printf("CReserveKey::GetReservedKey(): Warning: Using default key instead of a new key, top up your keypool!");
+                vchPubKey = pwallet->vchDefaultKey;
+            } else
+                return false;
+        }
+    }
+    assert(vchPubKey.IsValid());
+    pubkey = vchPubKey;
+    return true;
 }
 
 void CWallet::KeepKey(int64_t nIndex)

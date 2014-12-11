@@ -47,6 +47,8 @@ void OptionsModel::Init()
     fMinimizeOnClose = settings.value("fMinimizeOnClose", false).toBool();
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
     nTransactionFee = settings.value("nTransactionFee").toLongLong();
+    nDonatePercent = settings.value("nDonatePercent").toDouble();
+    bShowDonationTx = settings.value("bShowDonationTx").toBool();
     nReserveBalance = settings.value("nReserveBalance").toLongLong();
     language = settings.value("language", "").toString();
 
@@ -164,6 +166,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("nSocksVersion", 5);
         case Fee:
             return QVariant((qint64) nTransactionFee);
+        case Donation:
+                    return QVariant(nDonatePercent);
+        case ShowDonationTx:
+                    return QVariant(bShowDonationTx);
         case ReserveBalance:
             return QVariant((qint64) nReserveBalance);
         case DisplayUnit:
@@ -252,6 +258,14 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("nReserveBalance", (qint64) nReserveBalance);
             emit reserveBalanceChanged(nReserveBalance);
             break;
+        case Donation:
+                   nDonatePercent = value.toDouble();
+                   settings.setValue("nDonatePercent", nDonatePercent);
+                   break;
+        case ShowDonationTx:
+                   bShowDonationTx = value.toBool();
+                   settings.setValue("bShowDonationTx", bShowDonationTx);
+                   break;
         case DisplayUnit:
             nDisplayUnit = value.toInt();
             settings.setValue("nDisplayUnit", nDisplayUnit);

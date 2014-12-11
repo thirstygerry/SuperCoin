@@ -7,6 +7,8 @@
 
 #include <cstdlib>
 
+extern bool bShowDonationTx;
+
 // Earliest date that can be represented (far in the past)
 const QDateTime TransactionFilterProxy::MIN_DATE = QDateTime::fromTime_t(0);
 // Last date that can be represented (far in the future)
@@ -33,6 +35,7 @@ bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &
     QString address = index.data(TransactionTableModel::AddressRole).toString();
     QString label = index.data(TransactionTableModel::LabelRole).toString();
     qint64 amount = llabs(index.data(TransactionTableModel::AmountRole).toLongLong());
+    bool isdonation = index.data(TransactionTableModel::IsDonationTransmissionRole).toBool();
     int status = index.data(TransactionTableModel::StatusRole).toInt();
 
     if(!showInactive && (status == TransactionStatus::Conflicted || status == TransactionStatus::NotAccepted))
@@ -45,6 +48,8 @@ bool TransactionFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex &
         return false;
     if(amount < minAmount)
         return false;
+    if(!bShowDonationTx && isdonation)
+           return false;
 
     return true;
 }

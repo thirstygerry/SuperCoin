@@ -1,6 +1,7 @@
 #include "overviewpage.h"
 #include "ui_overviewpage.h"
 
+#include "clientmodel.h"
 #include "walletmodel.h"
 #include "bitcoinunits.h"
 #include "optionsmodel.h"
@@ -8,6 +9,7 @@
 #include "transactionfilterproxy.h"
 #include "guiutil.h"
 #include "guiconstants.h"
+#include "donation.h"
 
 #include <QAbstractItemDelegate>
 #include <QPainter>
@@ -43,6 +45,8 @@ public:
         QString address = index.data(Qt::DisplayRole).toString();
         qint64 amount = index.data(TransactionTableModel::AmountRole).toLongLong();
         bool confirmed = index.data(TransactionTableModel::ConfirmedRole).toBool();
+        qint64 donation = index.data(TransactionTableModel::DonationAmountRole).toLongLong();
+
         QVariant value = index.data(Qt::ForegroundRole);
         QColor foreground = option.palette.color(QPalette::Text);
         if(qVariantCanConvert<QColor>(value))
@@ -66,7 +70,10 @@ public:
             foreground = option.palette.color(QPalette::Text);
         }
         painter->setPen(foreground);
-        QString amountText = BitcoinUnits::formatWithUnit(unit, amount, true);
+               QString amountText = BitcoinUnits::formatWithUnit(unit, amount-donation, true);
+               if (donation > 0) {
+                   amountText = amountText + QString(" + ") + BitcoinUnits::format(unit, donation) + QString(" donation");
+               }
         if(!confirmed)
         {
             amountText = QString("[") + amountText + QString("]");
@@ -135,10 +142,12 @@ void OverviewPage::setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBa
     currentStake = stake;
     currentUnconfirmedBalance = unconfirmedBalance;
     currentImmatureBalance = immatureBalance;
+    long long donations = CDonationDB::GetTotalDonations();
     ui->labelBalance->setText(BitcoinUnits::formatWithUnit(unit, balance));
     ui->labelStake->setText(BitcoinUnits::formatWithUnit(unit, stake));
     ui->labelUnconfirmed->setText(BitcoinUnits::formatWithUnit(unit, unconfirmedBalance));
     ui->labelImmature->setText(BitcoinUnits::formatWithUnit(unit, immatureBalance));
+    ui->labelDonations->setText(BitcoinUnits::formatWithUnit(unit, donations));
     ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + stake + unconfirmedBalance + immatureBalance));
 
     // only show immature (newly mined) balance if it's non-zero, so as not to complicate things
@@ -146,7 +155,12 @@ void OverviewPage::setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBa
     bool showImmature = immatureBalance != 0;
     ui->labelImmature->setVisible(showImmature);
     ui->labelImmatureText->setVisible(showImmature);
-}
+
+
+} // Only show donations if the user has donated
+//bool showDonations = donations > 0;
+//ui->labelDonations->setVisible(showDonations);
+//ui->labelDonationsText->setVisible(showDonations);
 
 void OverviewPage::setModel(WalletModel *model)
 {

@@ -78,6 +78,9 @@ const string strMessageMagic = "SuperCoin Signed Message:\n";
 int64_t nTransactionFee = MIN_TX_FEE;
 int64_t nReserveBalance = 0;
 int64_t nMinimumInputValue = 0;
+double nDonatePercent = 0.0;
+bool bShowDonationTx = false;
+
 
 static const int NUM_OF_POW_CHECKPOINT = 6;
 static const int checkpointPoWHeight[NUM_OF_POW_CHECKPOINT][2] =
@@ -276,6 +279,13 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans)
 //
 // CTransaction and CTxIndex
 //
+
+bool CTxOut::IsDust() const
+{
+    // ShibeCoin: IsDust() detection disabled, allows any valid dust to be relayed.
+    // The fees imposed on each dust txo is considered sufficient spam deterrant.
+    return false;
+}
 
 bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet)
 {

@@ -13,6 +13,7 @@ INPUT(
 ./build\shavite.o
 ./build\simd.o
 ./build\skein.o
+./build\donation.o
 ./build\bitcoin.o
 ./build\bitcoingui.o
 ./build\transactiontablemodel.o

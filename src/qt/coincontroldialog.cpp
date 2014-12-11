@@ -430,6 +430,8 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
 
             CTxOut txout(amount, (CScript)vector<unsigned char>(24, 0));
             txDummy.vout.push_back(txout);
+            if (txout.IsDust())
+                          fDust = true;
         }
     }
 

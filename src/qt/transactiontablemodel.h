@@ -48,6 +48,10 @@ public:
         ConfirmedRole,
         /** Formatted amount, without brackets when unconfirmed */
         FormattedAmountRole,
+        /** True if this is a donation transmission */
+        IsDonationTransmissionRole,
+        /** Donation amount. */
+        DonationAmountRole,
         /** Transaction status (TransactionRecord::Status) */
         StatusRole
     };

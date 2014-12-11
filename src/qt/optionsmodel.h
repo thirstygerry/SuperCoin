@@ -27,6 +27,8 @@ public:
         ProxySocksVersion, // int
         Fee,               // qint64
         ReserveBalance,    // qint64
+        Donation,          // double
+        ShowDonationTx,    // bool
         DisplayUnit,       // BitcoinUnits::Unit
         DisplayAddresses,  // bool
         DetachDatabases,   // bool

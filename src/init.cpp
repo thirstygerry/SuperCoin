@@ -460,6 +460,11 @@ bool AppInit2()
             nConnectTimeout = nNewTimeout;
     }
 
+    if (mapArgs.count("-donate"))
+        {
+            nDonatePercent = atof(mapArgs["-donate"].c_str());
+        }
+
     if (mapArgs.count("-paytxfee"))
     {
         if (!ParseMoney(mapArgs["-paytxfee"], nTransactionFee))
@@ -755,7 +760,7 @@ bool AppInit2()
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
     bool fFirstRun = true;
-    pwalletMain = new CWallet(strWalletFileName);
+    pwalletMain = new CWallet(strWalletFileName, "donations.dat");
     DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DB_LOAD_OK)
     {

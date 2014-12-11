@@ -7,6 +7,7 @@
 #include "optionsmodel.h"
 #include "addresstablemodel.h"
 #include "bitcoinunits.h"
+#include "donation.h"
 
 #include "wallet.h"
 #include "ui_interface.h"
@@ -423,7 +424,17 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
 
 QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed) const
 {
-    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit);
+    QString str;
+    CDonation donation;
+    CDonationDB ddb(wallet->strDonationsFile);
+    if (ddb.IsDonationSource(wtx->hash) && ddb.Get(wtx->hash, donation))
+    {
+        str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit - donation.nAmount) + QString(" + ") + BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), donation.nAmount) + QString(" donation");
+    }
+    else
+    {
+        str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit);
+    }
     if(showUnconfirmed)
     {
         if(!wtx->status.countsForBalance)
@@ -566,6 +577,14 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         return formatTxAmount(rec, false);
     case StatusRole:
         return rec->status.status;
+    case IsDonationTransmissionRole:
+            return CDonationDB(wallet->strDonationsFile).IsDonationPayment(rec->hash);
+    case DonationAmountRole:
+            {
+                CDonation donation;
+                CDonationDB ddb(wallet->strDonationsFile);
+                return (ddb.IsDonationSource(rec->hash) && ddb.Get(rec->hash, donation)) ? donation.nAmount : (long long)0;
+            }
     }
     return QVariant();
 }

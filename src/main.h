@@ -85,6 +85,8 @@ extern std::map<uint256, CBlock*> mapOrphanBlocks;
 extern int64_t nTransactionFee;
 extern int64_t nReserveBalance;
 extern int64_t nMinimumInputValue;
+extern double nDonatePercent;
+extern bool bShowDonationTx;
 extern bool fUseFastIndex;
 extern unsigned int nDerivationMethodIndex;
 
@@ -408,6 +410,8 @@ public:
     {
         printf("%s\n", ToString().c_str());
     }
+
+    bool IsDust() const;
 };
 
 

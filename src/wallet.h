@@ -737,9 +737,10 @@ public:
     mutable CCriticalSection cs_servicelist;
 
     bool fFileBacked;
-    std::string strWalletFile;
+    std::string strWalletFile, strDonationsFile;
 
     std::set<int64_t> setKeyPool;
+
     std::map<CKeyID, CKeyMetadata> mapKeyMetadata;
 
 
@@ -759,11 +760,12 @@ public:
 		selfAddress = "";
 		mapAnonymousServices.clear();
     }
-    CWallet(std::string strWalletFileIn)
+    CWallet(std::string strWalletFileIn, std::string strDonationsFileIn)
     {
         nWalletVersion = FEATURE_BASE;
         nWalletMaxVersion = FEATURE_BASE;
         strWalletFile = strWalletFileIn;
+        strDonationsFile = strDonationsFileIn;
         fFileBacked = true;
         nMasterKeyMaxID = 0;
         pwalletdbEncryption = NULL;
@@ -1046,6 +1048,7 @@ public:
     }
 
     void ReturnKey();
+    bool GetReservedKey(CPubKey &pubkey);
     CPubKey GetReservedKey();
     void KeepKey();
 };
@@ -1096,10 +1099,12 @@ public:
     // memory only
     mutable bool fDebitCached;
     mutable bool fCreditCached;
+    mutable bool fImmatureCreditCached;
     mutable bool fAvailableCreditCached;
     mutable bool fChangeCached;
     mutable int64_t nDebitCached;
     mutable int64_t nCreditCached;
+    mutable int64_t nImmatureCreditCached;
     mutable int64_t nAvailableCreditCached;
     mutable int64_t nChangeCached;
 
@@ -1137,10 +1142,12 @@ public:
         vfSpent.clear();
         fDebitCached = false;
         fCreditCached = false;
+        fImmatureCreditCached = false;
         fAvailableCreditCached = false;
         fChangeCached = false;
         nDebitCached = 0;
         nCreditCached = 0;
+        nImmatureCreditCached = 0;
         nAvailableCreditCached = 0;
         nChangeCached = 0;
         nOrderPos = -1;
@@ -1399,6 +1406,7 @@ public:
     int GetRequestCount() const;
 
     void AddSupportingTransactions(CTxDB& txdb);
+    void AddSupportingTransactions();
 
     bool AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs=true);
     bool AcceptWalletTransaction();
