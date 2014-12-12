@@ -11,6 +11,8 @@
 #include "guiconstants.h"
 #include "donation.h"
 
+#include <string>
+
 #include <QAbstractItemDelegate>
 #include <QPainter>
 
@@ -142,12 +144,14 @@ void OverviewPage::setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBa
     currentStake = stake;
     currentUnconfirmedBalance = unconfirmedBalance;
     currentImmatureBalance = immatureBalance;
-    long long donations = CDonationDB::GetTotalDonations();
+    // no longer showing amount but current % that the user is donating
+    //long long donations = CDonationDB::GetTotalDonations();
     ui->labelBalance->setText(BitcoinUnits::formatWithUnit(unit, balance));
     ui->labelStake->setText(BitcoinUnits::formatWithUnit(unit, stake));
     ui->labelUnconfirmed->setText(BitcoinUnits::formatWithUnit(unit, unconfirmedBalance));
     ui->labelImmature->setText(BitcoinUnits::formatWithUnit(unit, immatureBalance));
-    ui->labelDonations->setText(BitcoinUnits::formatWithUnit(unit, donations));
+    //ui->labelDonations->setText(BitcoinUnits::formatWithUnit(unit, donations));
+    ui->labelDonations->setText(("Donating " + QString::number(nDonatePercent) + "% of your stake rewards to the dev team "));
     ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + stake + unconfirmedBalance + immatureBalance));
 
     // only show immature (newly mined) balance if it's non-zero, so as not to complicate things
