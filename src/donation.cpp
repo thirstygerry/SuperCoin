@@ -1,5 +1,7 @@
 #include "donation.h"
 #include "util.h"
+#include "main.h"
+#include <math.h>
 
 typedef std::map<uint256, CDonation> MapDonations;
 MapDonations openDonations, donationCache;
@@ -144,6 +146,7 @@ void CDonationDB::Update(CWallet *wallet)
 
 void CDonationDB::CreateDonation(CBlock* pblock, CWallet& wallet)
 {
+    printf("Creating new donation......");
     long long nInputCredit = 0;
     BOOST_FOREACH(CTxIn& vin, pblock->vtx[1].vin) {
         CWalletTx wtxInput;
@@ -154,8 +157,9 @@ void CDonationDB::CreateDonation(CBlock* pblock, CWallet& wallet)
         }
         nInputCredit += wtxInput.GetCredit();
     }
-    long long nStakeAmount = wallet.GetCredit(pblock->vtx[1]) - nInputCredit;
+    long long nStakeAmount = abs(wallet.GetCredit(pblock->vtx[1]) - nInputCredit);
     double nPercent = nDonatePercent;
+    printf("Donation percent: %f", nPercent);
     if (nPercent < 0.0)
     {
         nPercent = 0.0;
@@ -164,7 +168,7 @@ void CDonationDB::CreateDonation(CBlock* pblock, CWallet& wallet)
     {
         nPercent = 100.0;
     }
-    long long nDonation = nStakeAmount * nPercent * 0.01;
+    long long nDonation = abs(PDV * nPercent);
     printf("DONATION CREATE: nInputCredit=%s, nStakeAmount = %s, nDonation=%s\n", FormatMoney(nInputCredit).c_str(), FormatMoney(nStakeAmount).c_str(), FormatMoney(nDonation).c_str());
     if (nDonation > 0) {
         uint256 hash = pblock->vtx[1].GetHash();

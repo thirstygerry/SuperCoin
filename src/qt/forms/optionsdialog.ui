@@ -86,7 +86,7 @@
        <item row="3" column="0">
         <widget class="QLabel" name="donateInfoLabel">
          <property name="text">
-          <string>Donate a percent of your stake to help keep the Supercoin network running. If you appreciate the work we are doing and wish to contribute, please consider a portion of the coins earned as your wallet stakes.</string>
+          <string>Donate a percent of your stake to help keep the Supercoin network running. If you appreciate the work we are doing and wish to contribute, please consider donating a portion of your stake.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

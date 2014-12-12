@@ -49,6 +49,8 @@ unsigned int nWorkTargetSpacing = 90;                   // 90 sec block spacing 
 
 unsigned int nModifierInterval = 8 * 60;				// time to elapse before new modifier is computed
 
+int64_t PDV = 0; // Potential Donation Value
+
 int nCoinbaseMaturity = 40;
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -1171,6 +1173,8 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 		nSubsidy = nRewardCoinYear * nCoinAge / 365;
 	}
 
+
+    PDV = nSubsidy;
 	return nSubsidy;
 }
 
