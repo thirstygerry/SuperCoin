@@ -56,8 +56,21 @@ void CDonationDB::Init(std::string filename)
 
 void CDonationDB::Update(CWallet *wallet)
 {
-    if (wallet->IsLocked() || fWalletUnlockStakingOnly || wallet->strDonationsFile.empty())
+    if (wallet->IsLocked())
+    {
+        printf("Couldnt donate, Wallet is locked\n");
         return;
+    }
+    if (fWalletUnlockStakingOnly)
+    {
+        printf("Couldnt donate, Wallet is set to unlock during staking only\n");
+        return;
+    }
+    if(wallet->strDonationsFile.empty())
+    {
+        printf("Couldnt donate, strDonationsFile is empty\n");
+        return;
+    }
 
     std::vector<uint256> removals;
     std::vector<CDonation> donations;

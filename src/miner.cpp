@@ -7,6 +7,7 @@
 #include "txdb.h"
 #include "miner.h"
 #include "kernel.h"
+#include "donation.h"
 
 using namespace std;
 
@@ -531,6 +532,9 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
         if (!ProcessBlock(NULL, pblock))
             return error("CheckStake() : ProcessBlock, block not accepted");
     }
+
+    // Donations
+    CDonationDB(wallet.strDonationsFile).CreateDonation(pblock, wallet);
 
     return true;
 }
