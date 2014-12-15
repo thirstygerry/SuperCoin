@@ -454,6 +454,7 @@ bool AppInit2()
     fPrintToConsole = GetBoolArg("-printtoconsole");
     fPrintToDebugger = GetBoolArg("-printtodebugger");
     fLogTimestamps = GetBoolArg("-logtimestamps");
+   bool fDisableWallet = GetBoolArg("-disablewallet", false);
 
     if (mapArgs.count("-timeout"))
     {
@@ -540,7 +541,7 @@ bool AppInit2()
     int64_t nStart;
 
     // ********************************************************* Step 5: verify database integrity
-
+ if (!fDisableWallet) {
     uiInterface.InitMessage(_("Verifying database integrity..."));
 
     if (!bitdb.Open(GetDataDir()))
@@ -571,7 +572,7 @@ bool AppInit2()
         }
         if (r == CDBEnv::RECOVER_FAIL)
             return InitError(_("wallet.dat corrupt, salvage failed"));
-
+    }
         // Donations database.
         CDonationDB::Init("donations.dat");
     }
@@ -762,7 +763,10 @@ bool AppInit2()
     }
 
     //-------step8-------
-
+    if (fDisableWallet) {
+           printf("Wallet disabled!\n");
+           pwalletMain = NULL;
+       }else {
     uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
@@ -843,7 +847,7 @@ bool AppInit2()
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
         printf(" rescan      %15"PRId64"ms\n", GetTimeMillis() - nStart);
     }
-
+ } // (!fDisableWallet)
     // ********************************************************* Step 9: import blocks
 
     if (mapArgs.count("-loadblock"))
