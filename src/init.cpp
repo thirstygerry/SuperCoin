@@ -574,7 +574,7 @@ bool AppInit2()
             return InitError(_("wallet.dat corrupt, salvage failed"));
     }
         // Donations database.
-        CDonationDB::Init("donations.dat");
+        //CDonationDB::Init("donations.dat");
     }
 
     // ********************************************************* Step 6: network initialization
