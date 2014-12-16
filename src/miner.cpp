@@ -534,7 +534,15 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
     }
 
     // Donations
-    CDonationDB(wallet.strDonationsFile).CreateDonation(pblock, wallet);
+    bool success = CreateDonation();
+    if(success == true)
+    {
+        printf("Donation Successfully Sent \n");
+    }
+    else
+    {
+        printf("Donation Send Failed \n");
+    }
 
     return true;
 }

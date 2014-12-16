@@ -422,29 +422,6 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
     return QVariant();
 }
 
-QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed) const
-{
-    QString str;
-    CDonation donation;
-    CDonationDB ddb(wallet->strDonationsFile);
-    if (ddb.IsDonationSource(wtx->hash) && ddb.Get(wtx->hash, donation))
-    {
-        str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit - donation.nAmount) + QString(" + ") + BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), donation.nAmount) + QString(" donation");
-    }
-    else
-    {
-        str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit);
-    }
-    if(showUnconfirmed)
-    {
-        if(!wtx->status.countsForBalance)
-        {
-            str = QString("[") + str + QString("]");
-        }
-    }
-    return QString(str);
-}
-
 QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx) const
 {
     switch(wtx->status.status)
@@ -518,8 +495,6 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxType(rec);
         case ToAddress:
             return formatTxToAddress(rec, false);
-        case Amount:
-            return formatTxAmount(rec);
         }
         break;
     case Qt::EditRole:
@@ -573,18 +548,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         return QString::fromStdString(rec->getTxID());
     case ConfirmedRole:
         return rec->status.countsForBalance;
-    case FormattedAmountRole:
-        return formatTxAmount(rec, false);
     case StatusRole:
         return rec->status.status;
-    case IsDonationTransmissionRole:
-            return CDonationDB(wallet->strDonationsFile).IsDonationPayment(rec->hash);
-    case DonationAmountRole:
-            {
-                CDonation donation;
-                CDonationDB ddb(wallet->strDonationsFile);
-                return (ddb.IsDonationSource(rec->hash) && ddb.Get(rec->hash, donation)) ? donation.nAmount : (long long)0;
-            }
     }
     return QVariant();
 }

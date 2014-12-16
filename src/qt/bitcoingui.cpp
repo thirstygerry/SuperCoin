@@ -392,7 +392,7 @@ void BitcoinGUI::createToolBars2()
     toolbar->addAction(addressBookAction);
 
     toolbar->addAction(optionsAction);
-	toolbar->setContextMenuPolicy(Qt::PreventContextMenu);
+
     QWidget* spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     toolbar->addWidget(spacer);

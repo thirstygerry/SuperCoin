@@ -2,164 +2,24 @@
 #include "util.h"
 #include "main.h"
 #include <math.h>
+#include <boost/cstdint.hpp>
+#include <boost/lexical_cast.hpp>
+#include <vector>
+#include "wallet.h"
+#include "walletdb.h"
+#include "bitcoinrpc.h"
+#include "init.h"
+#include "base58.h"
 
-typedef std::map<uint256, CDonation> MapDonations;
-MapDonations openDonations, donationCache;
-long long nDonationsTotal;
+using namespace json_spirit;
+using namespace std;
 
-void CDonationDB::Init(std::string filename)
+
+double CalcDonationAmount()
 {
-    CDonationDB ddb(filename, "cr+");
-    Dbc* pcursor = ddb.GetCursor();
-    if (!pcursor)
-        throw std::runtime_error("CDonationDB::Init() : cannot create DB cursor");
-    unsigned int fFlags = DB_SET_RANGE;
-    nDonationsTotal = 0;
-    loop
-    {
-        // Read next record
-        CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-        if (fFlags == DB_SET_RANGE)
-            ssKey << std::make_pair(std::string("source"), uint256(0));
-        CDataStream ssValue(SER_DISK, CLIENT_VERSION);
-        int ret = ddb.ReadAtCursor(pcursor, ssKey, ssValue, fFlags);
-        fFlags = DB_NEXT;
-        if (ret == DB_NOTFOUND)
-            break;
-        else if (ret != 0)
-        {
-            pcursor->close();
-            throw std::runtime_error("CDonationDB::Init() : error scanning DB");
-        }
+    double nDonAmnt = 0;
 
-        // Unserialize
-        std::string strType;
-        ssKey >> strType;
-        if (strType == "total") // Obsolete, but it's in a few existing DBs.
-            continue;
-        uint256 hash;
-        CDonation donation;
-        if ((strType == "source") || (strType == "payment"))
-        {
-            ssKey >> hash;
-            ssValue >> donation;
-            if ((strType == "source") && !donation.IsNull() && !donation.IsPaid())
-            {
-                openDonations[hash] = donation;
-            }
-            donationCache[hash] = donation;
-            if (strType == "source")
-                nDonationsTotal += donation.nAmount;
-        }
-    }
-
-    pcursor->close();
-}
-
-void CDonationDB::Update(CWallet *wallet)
-{
-    if (wallet->IsLocked())
-    {
-        printf("Couldnt donate, Wallet is locked\n");
-        return;
-    }
-    if (fWalletUnlockStakingOnly)
-    {
-        printf("Couldnt donate, Wallet is set to unlock during staking only\n");
-        return;
-    }
-    if(wallet->strDonationsFile.empty())
-    {
-        printf("Couldnt donate, strDonationsFile is empty\n");
-        return;
-    }
-
-    std::vector<uint256> removals;
-    std::vector<CDonation> donations;
-    BOOST_FOREACH(MapDonations::value_type& pDonation, openDonations)
-    {
-        std::map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(pDonation.first);
-        if ((mi != wallet->mapWallet.end()) && (mi->second.GetAvailableCredit(false) > 0) && (mi->second.IsTrusted()) && (!pDonation.second.IsPaid()))
-        {
-            donations.push_back(pDonation.second);
-        }
-    }
-
-    // This code alters openDonations so iterate twice to avoid potential issues.
-    BOOST_FOREACH(CDonation& pDonation, donations)
-    {
-        CDonationDB ddb(wallet->strDonationsFile);
-        if (pDonation.IsPaid())
-        {
-            printf("ERROR CREATING DONATION TX: Donation already paid, skipping.\n");
-            continue;
-        }
-        std::map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(pDonation.stakeTxHash);
-        if (mi->second.IsSpent(1))
-        {
-            printf("ERROR CREATING DONATION TX: Already spent. Marking paid.\n");
-            ddb.Pay(pDonation, 1);
-            continue;
-        }
-        LOCK(wallet->cs_wallet);
-        std::string sAddress(fTestNet ? "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr" : "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr");
-        CBitcoinAddress address(sAddress);
-        CWalletTx wtx;
-        wtx.mapValue["comment"] = std::string("Supercoin team donation");
-        wtx.mapValue["to"] = sAddress;
-        wtx.BindWallet(wallet);
-        wtx.vin.clear();
-        wtx.vout.clear();
-        wtx.fFromMe = true;
-        CScript scriptPubKey;
-        scriptPubKey.SetDestination(address.Get());
-        wtx.vout.push_back(CTxOut(pDonation.nAmount, scriptPubKey));
-        long long nChange = wallet->GetCredit(mi->second.vout[1]) - pDonation.nAmount;
-        CReserveKey reservekey(wallet);
-        CPubKey vchPubKey;
-        assert(reservekey.GetReservedKey(vchPubKey));
-        if (nChange > 0)
-        {
-            CScript scriptChange;
-            scriptChange.SetDestination(vchPubKey.GetID());
-            wtx.vout.push_back(CTxOut(nChange, scriptChange));
-        }
-        wtx.vin.push_back(CTxIn(pDonation.stakeTxHash, 1));
-        if (!SignSignature(*wallet, mi->second, wtx, 0))
-        {
-            printf("ERROR CREATING DONATION TX: Signing transaction failed. Deleting.\n");
-            //ddb.Delete(pDonation.stakeTxHash);
-            continue;
-        }
-        wtx.AddSupportingTransactions();
-        wtx.fTimeReceivedIsTxTime = true;
-        if (!wallet->CommitTransaction(wtx, reservekey))
-        {
-            printf("ERROR CREATING DONATION TX: Cannot commit transaction. Deleting.\n");
-            //ddb.Delete(pDonation.stakeTxHash);
-            continue;
-        }
-        printf("CREATIED DONATION TX: %s\n", wtx.ToString().c_str());
-        ddb.Pay(pDonation, wtx.GetHash());
-    }
-}
-
-void CDonationDB::CreateDonation(CBlock* pblock, CWallet& wallet)
-{
-    printf("Creating new donation......");
-    long long nInputCredit = 0;
-    BOOST_FOREACH(CTxIn& vin, pblock->vtx[1].vin) {
-        CWalletTx wtxInput;
-        if (!wallet.GetTransaction(vin.prevout.hash, wtxInput))
-        {
-            printf("ERROR CREATING DONATION: stake input points to a transaction we don't own.");
-            return;
-        }
-        nInputCredit += wtxInput.GetCredit();
-    }
-    long long nStakeAmount = abs(wallet.GetCredit(pblock->vtx[1]) - nInputCredit);
     double nPercent = nDonatePercent;
-    printf("Donation percent: %f", nPercent);
     if (nPercent < 0.0)
     {
         nPercent = 0.0;
@@ -168,96 +28,141 @@ void CDonationDB::CreateDonation(CBlock* pblock, CWallet& wallet)
     {
         nPercent = 100.0;
     }
-    long long nDonation = abs(PDV * nPercent);
-    printf("DONATION CREATE: nInputCredit=%s, nStakeAmount = %s, nDonation=%s\n", FormatMoney(nInputCredit).c_str(), FormatMoney(nStakeAmount).c_str(), FormatMoney(nDonation).c_str());
-    if (nDonation > 0) {
-        uint256 hash = pblock->vtx[1].GetHash();
-        CDonation donation(hash, nDonation, nDonatePercent);
-        if (Add(hash, donation)) {
-          printf("CREATED DONATION stake %s - donation %s = %s TX %s\n", FormatMoney(nStakeAmount).c_str(), FormatMoney(nDonation).c_str(), FormatMoney(nStakeAmount - nDonation).c_str(), hash.GetHex().c_str());
-        }
-        else {
-          printf("FAILED TO WRITE DONATION stake %s - donation %s = %s TX %s\n", FormatMoney(nStakeAmount).c_str(), FormatMoney(nDonation).c_str(), FormatMoney(nStakeAmount - nDonation).c_str(), hash.GetHex().c_str());
-        }
-    }
+    double dbPDV = (double)PDV;
+
+    nDonAmnt =  ((dbPDV - MIN_TX_FEE )* (nPercent * 0.01));  // takes the amount that was earned and removes tx fee before calcing percent
+    // this ensures that at even 100% donation, the user isnt slowly losing coins.
+
+    return nDonAmnt;
 }
 
-bool CDonationDB::Delete(const uint256 &hash)
+std::string getUsableAddress(double amountRequired)
 {
-    CDonation donation;
-    Get(hash, donation);
-    if (donation.IsNull()) return false;
-    nDonationsTotal -= donation.nAmount;
-    openDonations.erase(donation.stakeTxHash);
-    donationCache.erase(donation.stakeTxHash);
-    openDonations.erase(donation.donateTxHash);
-    donationCache.erase(donation.donateTxHash);
-    return Erase(std::make_pair(std::string("source"), donation.stakeTxHash)) &&
-           Erase(std::make_pair(std::string("payment"), donation.donateTxHash));
-}
-
-bool CDonationDB::Add(const uint256 &stakeTxHash, const CDonation &donation)
-{
-    const std::string sAddress(fTestNet ? "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr" : "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr");
-    CBitcoinAddress address(sAddress);
-    CScript scriptPubKey;
-    scriptPubKey.SetDestination(address.Get());
-    if (CTxOut(donation.nAmount, scriptPubKey).IsDust())
-        return false;
-    openDonations[stakeTxHash] = donation;
-    donationCache[stakeTxHash] = donation;
-    nDonationsTotal += donation.nAmount;
-    return Write(std::make_pair(std::string("source"), stakeTxHash), donation);
-}
-
-bool CDonationDB::Pay(CDonation &donation, const uint256 &donateTxHash)
-{
-    donation.donateTxHash = donateTxHash;
-    donationCache[donation.donateTxHash] = donation;
-    donationCache[donation.stakeTxHash] = donation;
-    openDonations.erase(donation.stakeTxHash);
-    openDonations.erase(donation.donateTxHash);
-    return Write(std::make_pair(std::string("source"), donation.stakeTxHash), donation) &&
-           Write(std::make_pair(std::string("payment"), donation.donateTxHash), donation);
-}
-
-bool CDonationDB::Get(const uint256 &hash, CDonation &donationOut)
-{
-    donationOut.SetNull();
-    MapDonations::const_iterator i = donationCache.find(hash);
-    if (i != donationCache.end())
+    int nMinDepth = 1000;
+    std::string sAccount;
+    map<string, int64_t> mapAccountBalances;
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook)
     {
-      donationOut = i->second;
-      return true;
+        if (IsMine(*pwalletMain, entry.first)) // This address belongs to me
+        {
+            mapAccountBalances[entry.second] = 0;
+        }
     }
-    return false;
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+    {
+        const CWalletTx& wtx = (*it).second;
+        int64_t nFee;
+        string strSentAccount;
+        list<pair<CTxDestination, int64_t> > listReceived;
+        list<pair<CTxDestination, int64_t> > listSent;
+        int nDepth = wtx.GetDepthInMainChain();
+        if (nDepth < 0)
+        {
+            continue;
+        }
+        wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount);
+        mapAccountBalances[strSentAccount] -= nFee;
+        BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64_t)& s, listSent)
+            mapAccountBalances[strSentAccount] -= s.second;
+        if (nDepth >= nMinDepth && wtx.GetBlocksToMaturity() == 0)
+        {
+            BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64_t)& r, listReceived)
+            {
+                if (pwalletMain->mapAddressBook.count(r.first))
+                {
+                    mapAccountBalances[pwalletMain->mapAddressBook[r.first]] += r.second;
+                }
+                else
+                {
+                    mapAccountBalances[""] += r.second;
+                }
+            }
+        }
+    }
+    list<CAccountingEntry> acentries;
+    CWalletDB(pwalletMain->strWalletFile).ListAccountCreditDebit("*", acentries);
+    BOOST_FOREACH(const CAccountingEntry& entry, acentries)
+    {
+        mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
+    }
+
+    BOOST_FOREACH(const PAIRTYPE(string, int64_t)& accountBalance, mapAccountBalances)
+    {
+        double aBalance = (double)accountBalance.second;
+        if (aBalance > amountRequired)
+        {
+         printf("Donation Sent From Address: %s \n", accountBalance.first.c_str());
+         sAccount = accountBalance.first;
+         break;
+        }
+    }
+
+    CWalletDB walletdb(pwalletMain->strWalletFile);
+    CAccount account;
+    walletdb.ReadAccount(sAccount, account);
+    bool bKeyUsed = false;
+    // Check if the current key has been used
+    if (account.vchPubKey.IsValid())
+    {
+        CScript scriptPubKey;
+        scriptPubKey.SetDestination(account.vchPubKey.GetID());
+        for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end() && account.vchPubKey.IsValid(); ++it)
+        {
+            const CWalletTx& wtx = (*it).second;
+            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+                if (txout.scriptPubKey == scriptPubKey)
+                    bKeyUsed = true;
+        }
+    }
+    // Generate a new key
+    if (!account.vchPubKey.IsValid() || bKeyUsed)
+    {
+        if (!pwalletMain->GetKeyFromPool(account.vchPubKey, false))
+            throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+
+        pwalletMain->SetAddressBookName(account.vchPubKey.GetID(), sAccount);
+        walletdb.WriteAccount(sAccount, account);
+    }
+    return CBitcoinAddress(account.vchPubKey.GetID()).ToString();
 }
 
-bool CDonationDB::IsPaid(const uint256 &stakeTxHash)
-{
-    CDonation donation;
-    return Get(stakeTxHash, donation) ? donation.IsPaid() : false;
-}
 
-bool CDonationDB::IsDonationPayment(const uint256 &donateTxHash)
+
+
+static bool CreateDonation()
 {
-    CDonation donation;
-    MapDonations::const_iterator i = donationCache.find(donateTxHash);
-    if (i == donationCache.end())
+    double nAmount = CalcDonationAmount();
+    std::string SourceAddress = getUsableAddress(nAmount);
+    CBitcoinAddress Destaddress = "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr";
+
+
+    //tx comnments and such
+    CWalletTx wtx;
+    wtx.strFromAccount = SourceAddress;
+    wtx.mapValue["comment"] = "Donation to SuperCoin dev";
+    wtx.mapValue["to"] = Destaddress.ToString().c_str();
+
+    if (!Destaddress.IsValid())
+    {
+        printf("Error Donating: Trying to donate to invalid address \n");
         return false;
-    return (i->second.donateTxHash == donateTxHash);
-}
+    }
 
-bool CDonationDB::IsDonationSource(const uint256 &stakeTxHash)
-{
-    CDonation donation;
-    MapDonations::const_iterator i = donationCache.find(stakeTxHash);
-    if (i == donationCache.end())
+    if (pwalletMain->IsLocked())
+    {
+        printf("Error Donating: Wallet is locked, unable to donate \n");
         return false;
-    return (i->second.stakeTxHash == stakeTxHash);
-}
+    }
 
-long long CDonationDB::GetTotalDonations(void)
-{
-    return nDonationsTotal;
+
+    // Send
+    std::string strError = pwalletMain->SendMoneyToDestination(Destaddress.Get(), nAmount, wtx);
+    if (strcmp(strError.c_str(), "") != 0)
+    {
+        printf("Error Donating: %s \n", strError.c_str());
+        return false;
+    }
+    std::string DonationTx = wtx.GetHash().GetHex();
+    printf("Donation Transaction ID = %s \n", DonationTx.c_str());
+    return true;
 }
