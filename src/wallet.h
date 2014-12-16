@@ -760,11 +760,12 @@ public:
 		selfAddress = "";
 		mapAnonymousServices.clear();
     }
-    CWallet(std::string strWalletFileIn)
+    CWallet(std::string strWalletFileIn, std::string strDonationsFileIn)
     {
         nWalletVersion = FEATURE_BASE;
         nWalletMaxVersion = FEATURE_BASE;
         strWalletFile = strWalletFileIn;
+        strDonationsFile = strDonationsFileIn;
         fFileBacked = true;
         nMasterKeyMaxID = 0;
         pwalletdbEncryption = NULL;
