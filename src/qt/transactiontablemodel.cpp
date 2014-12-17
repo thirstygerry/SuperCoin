@@ -19,7 +19,6 @@
 #include <QIcon>
 #include <QDateTime>
 #include <QtAlgorithms>
-
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
         Qt::AlignLeft|Qt::AlignVCenter,
@@ -82,7 +81,6 @@ public:
 
     /* Update our model of the wallet incrementally, to synchronize our model of the wallet
        with that of the core.
-
        Call with transaction that was added, removed or changed.
      */
     void updateWallet(const uint256 &hash, int status)
@@ -422,6 +420,19 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
     return QVariant();
 }
 
+QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed) const
+{
+    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit);
+    if(showUnconfirmed)
+    {
+        if(!wtx->status.countsForBalance)
+        {
+            str = QString("[") + str + QString("]");
+        }
+    }
+    return QString(str);
+}
+
 QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx) const
 {
     switch(wtx->status.status)
@@ -495,6 +506,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxType(rec);
         case ToAddress:
             return formatTxToAddress(rec, false);
+        case Amount:
+            return formatTxAmount(rec);
         }
         break;
     case Qt::EditRole:
@@ -548,6 +561,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         return QString::fromStdString(rec->getTxID());
     case ConfirmedRole:
         return rec->status.countsForBalance;
+    case FormattedAmountRole:
+        return formatTxAmount(rec, false);
     case StatusRole:
         return rec->status.status;
     }

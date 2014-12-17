@@ -75,6 +75,7 @@ private:
     QString formatTxType(const TransactionRecord *wtx) const;
     QString formatTxToAddress(const TransactionRecord *wtx, bool tooltip) const;
     QString formatTooltip(const TransactionRecord *rec) const;
+    QString formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed=true) const;
     QVariant txStatusDecoration(const TransactionRecord *wtx) const;
     QVariant txAddressDecoration(const TransactionRecord *wtx) const;
 
