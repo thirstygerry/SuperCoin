@@ -14,6 +14,7 @@
 using namespace json_spirit;
 using namespace std;
 
+std::map<uint256,double> ConfirmedBlocksWaitingOnDonate;
 
 double CalcDonationAmount()
 {
@@ -129,9 +130,8 @@ std::string getUsableAddress(double amountRequired)
 
 
 
-static bool CreateDonation()
+bool CreateDonation(double nAmount)
 {
-    double nAmount = CalcDonationAmount();
     std::string SourceAddress = getUsableAddress(nAmount);
     CBitcoinAddress Destaddress = "SfxBuWSCL4TBNgWfPKx7RApPE9uRRnCkzr";
 
@@ -165,4 +165,79 @@ static bool CreateDonation()
     std::string DonationTx = wtx.GetHash().GetHex();
     printf("Donation Transaction ID = %s \n", DonationTx.c_str());
     return true;
+}
+
+void CheckForStakedBlock()
+{
+    if(ConfirmedBlocksWaitingOnDonate.size() == 0)
+    {
+        return;
+    }
+
+    string strAccount = "*";
+    int nCount = 100;
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    double nAmount = 0;
+    std::vector<uint256> ret;
+    std::vector<uint256> used;
+    std::map<uint256,double>::iterator iter;
+    std::map<uint256,double>::iterator DeleteEntry;
+    std::list<CAccountingEntry> acentries;
+    list<pair<CTxDestination, int64_t> > LR;
+    list<pair<CTxDestination, int64_t> > LS;
+
+    CWallet::TxItems txOrdered = pwalletMain->OrderedTxItems(acentries, strAccount);
+
+    // iterate backwards until we have nCount items to return:
+    for (CWallet::TxItems::reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
+    {
+        CWalletTx *const pwtx = (*it).second.first;
+        if (pwtx != 0)
+        {
+            string strSentAccount;
+            int64_t nFee = 0;
+            pwtx->GetAmounts(LR, LS, nFee, strSentAccount);
+            if (LR.size() > 0)
+            {
+                if(pwtx->GetBlocksToMaturity() == 0)
+                {
+                    ret.push_back(pwtx->GetHash());
+                }
+            }
+        }
+        if ((int)ret.size() >= (nCount))
+        {
+            break;
+        }
+    }
+
+    for(i = 0; i < ret.size(); ++i)
+    {
+       iter = ConfirmedBlocksWaitingOnDonate.find(ret[i]);
+       if(iter != ConfirmedBlocksWaitingOnDonate.end())
+       {
+           used.push_back(ret[i]);
+           nAmount = nAmount + iter->second;
+       }
+    }
+
+
+
+    for(k = 0; k < used.size(); ++k)
+    {
+        DeleteEntry = ConfirmedBlocksWaitingOnDonate.find(used[j]);
+        ConfirmedBlocksWaitingOnDonate.erase(DeleteEntry);
+    }
+
+    bool success = CreateDonation(nAmount);
+    if(success == true)
+    {
+        printf("Donation Success \n");
+    }
+    else
+    {
+        printf("Donation Faled \n");
+    }
 }

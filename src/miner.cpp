@@ -533,17 +533,13 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
             return error("CheckStake() : ProcessBlock, block not accepted");
     }
 
-    // Donations
-    bool success = CreateDonation();
-    if(success == true)
+    // Donations marked
+    uint256 hash = pblock->vtx[1].GetHash();
+    double DonAmnt = CalcDonationAmount();
+    if (DonAmnt != 0)
     {
-        printf("Donation Successfully Sent \n");
+        ConfirmedBlocksWaitingOnDonate.insert(std::pair<uint256,double>(hash,DonAmnt));
     }
-    else
-    {
-        printf("Donation Send Failed \n");
-    }
-
     return true;
 }
 
