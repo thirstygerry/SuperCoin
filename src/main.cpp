@@ -1201,6 +1201,78 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 	return nSubsidy;
 }
 
+bool PoSRewardHittingLimit(int64_t nCoinAge, const CBlockIndex* pindex)
+{
+    int64_t nRewardCoinYear = MAX_PROOF_OF_STAKE_STABLE;
+    int nPoSHeight = GetPosHeight(pindex);
+    int nPoWHeight = pindex->nHeight - nPoSHeight;
+    int64_t nSubsidy = 0;
+
+    if(nPoSHeight < YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 100 * nRewardCoinYear * nCoinAge / 365;
+
+        uint256 hash = pindex->GetBlockHash();
+        std::string cseed_str = hash.ToString().substr(13,7);
+        const char* cseed = cseed_str.c_str();
+        long seed = hex2long(cseed);
+        int random = GenerateMTRandom(seed, 10000000);
+
+        int64_t delta = nCoinAge;
+        if(nPoWHeight < 19200)
+        {
+            delta = delta * 19200 / nPoWHeight;
+        }
+
+        if(delta > 3000000)
+            delta = 3000000;
+
+        int lowerLimit = 5000000 - delta;
+        int upperLimit = 5000000 + delta;
+
+        if(lowerLimit < 0)
+            lowerLimit = 0;
+
+        if(upperLimit > 10000000)
+            upperLimit = 10000000;
+
+        // printf(">> random = %d, lowerLimit = %d, upperLimit = %d, nPoWHeight = %d\n",
+        // 	random, lowerLimit, upperLimit, nPoWHeight);
+
+        if(random >= lowerLimit && random <= upperLimit)
+        {
+            printf(">> Got Super-PoS-Block...yay!\n");
+            nSubsidy += 1024 * COIN;
+        }
+    }
+    else if(nPoSHeight < 2 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 50 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else if(nPoSHeight < 3 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 20 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else if(nPoSHeight < 4 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 15 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else if(nPoSHeight < 5 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 10 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else
+    {
+        nSubsidy = 5 * nRewardCoinYear * nCoinAge / 365;
+    }
+    int64_t nextMoney = (ValueFromAmountAsInt(pindexBest->nMoneySupply) + nSubsidy);
+    if(nextMoney > MaxAllowedCoins)
+    {
+        return true;
+    }
+    return false;
+}
+
 //
 // maximum nBits value could possible be required nTime after
 //
