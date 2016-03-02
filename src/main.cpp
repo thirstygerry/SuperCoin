@@ -97,6 +97,8 @@ static const int checkpointPoWHeight[NUM_OF_POW_CHECKPOINT][2] =
 };
 extern enum Checkpoints::CPMode CheckpointsMode;
 
+extern int64_t ValueFromAmountAsInt(int64_t amount);
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // dispatching functions
@@ -1185,7 +1187,7 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 	{
         nSubsidy = 5 * nRewardCoinYear * nCoinAge / 365;
 	}
-    int64_t nextMoney = (ValueFromAmountAsDouble(pindexBest->nMoneySupply) + nSubsidy);
+    int64_t nextMoney = (ValueFromAmountAsInt(pindexBest->nMoneySupply) + nSubsidy);
     if(nextMoney > MaxAllowedCoins)
     {
         int64_t difference = (nextMoney - MaxAllowedCoins);
