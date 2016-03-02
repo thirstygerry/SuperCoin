@@ -1787,7 +1787,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             return error("CreateCoinStake : failed to calculate coin age");
 
         int64_t nReward = GetProofOfStakeReward(nCoinAge, pindexBest);
-        bool hittinglimit = PoSRewardHittingLimit(nCoinAge,pindex);
+        bool hittinglimit = PoSRewardHittingLimit(nCoinAge, pindexBest);
         if (nReward <= 0 && hittinglimit == false)
         {
             return false;
