@@ -1169,12 +1169,32 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 	{
 		nSubsidy = 50 * nRewardCoinYear * nCoinAge / 365;
 	}
+    else if(nPoSHeight < 3 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 20 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else if(nPoSHeight < 4 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 15 * nRewardCoinYear * nCoinAge / 365;
+    }
+    else if(nPoSHeight < 5 * YEARLY_POS_BLOCK_COUNT)
+    {
+        nSubsidy = 10 * nRewardCoinYear * nCoinAge / 365;
+    }
 	else 	
 	{
-		nSubsidy = nRewardCoinYear * nCoinAge / 365;
+        nSubsidy = 5 * nRewardCoinYear * nCoinAge / 365;
 	}
-
-
+    int64_t nextMoney = (ValueFromAmountAsDouble(pindexBest->nMoneySupply) + nSubsidy);
+    if(nextMoney > MaxAllowedCoins)
+    {
+        int64_t difference = (nextMoney - MaxAllowedCoins);
+        nSubsidy = nextMoney - difference;
+    }
+    if(nextMoney == MaxAllowedCoins)
+    {
+        nSubsidy = 0;
+    }
     PDV = nSubsidy;
 	return nSubsidy;
 }
