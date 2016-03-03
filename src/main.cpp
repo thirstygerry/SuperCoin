@@ -1167,7 +1167,7 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 			nSubsidy += 1024 * COIN;
 		}
 	}
-	else if(nPoSHeight < 2 * YEARLY_POS_BLOCK_COUNT)	
+    else if(nPoSHeight < 2 * YEARLY_POS_BLOCK_COUNT)
 	{
 		nSubsidy = 50 * nRewardCoinYear * nCoinAge / 365;
 	}
@@ -1187,16 +1187,18 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, const CBlockIndex* pindex)
 	{
         nSubsidy = 5 * nRewardCoinYear * nCoinAge / 365;
 	}
+
     int64_t nextMoney = (ValueFromAmountAsInt(pindexBest->nMoneySupply) + nSubsidy);
-    if(nextMoney > MaxAllowedCoins)
+    if(nextMoney > MAX_MONEY)
     {
-        int64_t difference = (nextMoney - MaxAllowedCoins);
+        int64_t difference = (nextMoney - MAX_MONEY);
         nSubsidy = nextMoney - difference;
     }
-    if(nextMoney == MaxAllowedCoins)
+    if(nextMoney == MAX_MONEY)
     {
         nSubsidy = 0;
     }
+
     PDV = nSubsidy;
 	return nSubsidy;
 }
@@ -1266,7 +1268,7 @@ bool PoSRewardHittingLimit(int64_t nCoinAge, const CBlockIndex* pindex)
         nSubsidy = 5 * nRewardCoinYear * nCoinAge / 365;
     }
     int64_t nextMoney = (ValueFromAmountAsInt(pindexBest->nMoneySupply) + nSubsidy);
-    if(nextMoney > MaxAllowedCoins)
+    if(nextMoney > MAX_MONEY)
     {
         return true;
     }
