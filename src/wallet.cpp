@@ -439,7 +439,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
             wtx.nTimeSmart = wtx.nTimeReceived;
             if (wtxIn.hashBlock != 0)
             {
-                if (mapBlockIndex.count(wtxIn.hashBlock))
+                if (mapBlockIndex.count(wtxIn.hashBlock) || mapBlockLocatorIndex.count(wtxIn.hashBlock))
                 {
                     unsigned int latestNow = wtx.nTimeReceived;
                     unsigned int latestEntry = 0;
@@ -473,7 +473,18 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                         }
                     }
 
-                    unsigned int& blocktime = mapBlockIndex[wtxIn.hashBlock]->nTime;
+                    unsigned int blocktime = 0;
+                    if(mapBlockIndex.count(wtxIn.hashBlock))
+                    {
+                        blocktime = mapBlockIndex[wtxIn.hashBlock]->nTime;
+                    }
+                    else if(mapBlockLocatorIndex.count(wtxIn.hashBlock))
+                    {
+                        CBlockLocatorHeader* header = mapBlockLocatorIndex[wtxIn.hashBlock];
+                        CBlock block(header->nFile, header->nBlockPos);
+                        blocktime = block.nTime;
+                    }
+
                     wtx.nTimeSmart = std::max(latestEntry, std::min(blocktime, latestNow));
                 }
                 else
@@ -2496,21 +2507,52 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const {
 
     // find first block that affects those keys, if there are any left
     std::vector<CKeyID> vAffected;
-    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++) {
+    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++)
+    {
         // iterate over all wallet transactions...
         const CWalletTx &wtx = (*it).second;
         std::map<uint256, CBlockIndex*>::const_iterator blit = mapBlockIndex.find(wtx.hashBlock);
-        if (blit != mapBlockIndex.end() && blit->second->IsInMainChain()) {
+        std::map<uint256, CBlockLocatorHeader*>::const_iterator iter = mapBlockLocatorIndex.find(wtx.hashBlock);
+        if (blit != mapBlockIndex.end() && blit->second->IsInMainChain())
+        {
             // ... which are already in a block
             int nHeight = blit->second->nHeight;
-            BOOST_FOREACH(const CTxOut &txout, wtx.vout) {
+            BOOST_FOREACH(const CTxOut &txout, wtx.vout)
+            {
                 // iterate over all their outputs
                 ::ExtractAffectedKeys(*this, txout.scriptPubKey, vAffected);
-                BOOST_FOREACH(const CKeyID &keyid, vAffected) {
+                BOOST_FOREACH(const CKeyID &keyid, vAffected)
+                {
                     // ... and all their affected keys
                     std::map<CKeyID, CBlockIndex*>::iterator rit = mapKeyFirstBlock.find(keyid);
                     if (rit != mapKeyFirstBlock.end() && nHeight < rit->second->nHeight)
+                    {
                         rit->second = blit->second;
+                    }
+                }
+                vAffected.clear();
+            }
+        }
+        else if (iter != mapBlockLocatorIndex.end() && iter->second->IsInMainChain() && blit == mapBlockIndex.end())
+        {
+            // ... which are already in a block
+            int nHeight = iter->second->nHeight;
+            BOOST_FOREACH(const CTxOut &txout, wtx.vout)
+            {
+                // iterate over all their outputs
+                ::ExtractAffectedKeys(*this, txout.scriptPubKey, vAffected);
+                BOOST_FOREACH(const CKeyID &keyid, vAffected)
+                {
+                    // ... and all their affected keys
+                    std::map<CKeyID, CBlockIndex*>::iterator rit = mapKeyFirstBlock.find(keyid);
+                    if (rit != mapKeyFirstBlock.end() && nHeight < rit->second->nHeight)
+                    {
+                        CBlockLocatorHeader* header = (*iter).second;
+                        CBlock block(header->nFile, header->nBlockPos);
+                        CBlockIndex *index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+                        index->nHeight = header->nHeight;
+                        rit->second = index;
+                    }
                 }
                 vAffected.clear();
             }

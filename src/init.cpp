@@ -708,14 +708,6 @@ bool AppInit2()
         return InitError(msg);
     }
 
-    if (GetBoolArg("-loadblockindextest"))
-    {
-        CTxDB txdb("r");
-        txdb.LoadBlockIndex();
-        PrintBlockTree();
-        return false;
-    }
-
     uiInterface.InitMessage(_("Loading block index..."));
     printf("Loading block index...\n");
     nStart = GetTimeMillis();
@@ -733,40 +725,12 @@ bool AppInit2()
     }
     printf(" block index %15"PRId64"ms\n", GetTimeMillis() - nStart);
 
-    if (GetBoolArg("-printblockindex") || GetBoolArg("-printblocktree"))
-    {
-        PrintBlockTree();
-        return false;
-    }
-
-    if (mapArgs.count("-printblock"))
-    {
-        string strMatch = mapArgs["-printblock"];
-        int nFound = 0;
-        for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
-        {
-            uint256 hash = (*mi).first;
-            if (strncmp(hash.ToString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
-            {
-                CBlockIndex* pindex = (*mi).second;
-                CBlock block;
-                block.ReadFromDisk(pindex);
-                block.BuildMerkleTree();
-                block.print();
-                printf("\n");
-                nFound++;
-            }
-        }
-        if (nFound == 0)
-            printf("No blocks matching %s were found\n", strMatch.c_str());
-        return false;
-    }
-
     //-------step8-------
     if (fDisableWallet) {
            printf("Wallet disabled!\n");
            pwalletMain = NULL;
-       }else {
+       }else
+    {
     uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
@@ -845,9 +809,34 @@ bool AppInit2()
         printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
-        printf(" rescan      %15"PRId64"ms\n", GetTimeMillis() - nStart);
+        printf(" rescan      %15" PRId64 "ms\n", GetTimeMillis() - nStart);
     }
- } // (!fDisableWallet)
+    } // (!fDisableWallet)
+
+    printf("mapBlockIndex.size()  before trimming = %" PRIszu "\n",   mapBlockIndex.size());
+
+
+    /// this should limit mapBlockIndex size on startup leaving the chain intact because the skeleton of the chain is still in mapBlockLocatorIndex
+    if(mapBlockIndex.size() > 400000)
+    {
+        std::map<uint256, CBlockIndex*> mapBlockIndexCopy;
+        int compareHeight = pindexBest->nHeight - 250000;
+        std::map<uint256, CBlockIndex*>::iterator iter;
+        for(iter = mapBlockIndex.begin(); iter != mapBlockIndex.end(); ++iter)
+        {
+            CBlockIndex* checkIndex = iter->second;
+            int indexHeight = checkIndex->nHeight;
+            if( indexHeight != 0 && indexHeight >= compareHeight)
+            {
+                mapBlockIndexCopy[indexHeight] = checkIndex;
+            }
+        }
+        printf("block index copy created \n");
+        mapBlockIndex = mapBlockIndexCopy;
+    }
+
+    printf("done trimming \n");
+
     // ********************************************************* Step 9: import blocks
 
     if (mapArgs.count("-loadblock"))
@@ -868,7 +857,8 @@ bool AppInit2()
         uiInterface.InitMessage(_("Importing bootstrap blockchain data file."));
 
         FILE *file = fopen(pathBootstrap.string().c_str(), "rb");
-        if (file) {
+        if (file)
+        {
             filesystem::path pathBootstrapOld = GetDataDir() / "bootstrap.dat.old";
             LoadExternalBlockFile(file);
             RenameOver(pathBootstrap, pathBootstrapOld);
@@ -898,7 +888,7 @@ bool AppInit2()
     RandAddSeedPerfmon();
 
     //// debug print
-    printf("mapBlockIndex.size() = %"PRIszu"\n",   mapBlockIndex.size());
+    printf("mapBlockIndex.size() after trimming = %"PRIszu"\n",   mapBlockIndex.size());
     printf("nBestHeight = %d\n",            nBestHeight);
     printf("setKeyPool.size() = %"PRIszu"\n",      pwalletMain->setKeyPool.size());
     printf("mapWallet.size() = %"PRIszu"\n",       pwalletMain->mapWallet.size());

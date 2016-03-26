@@ -18,6 +18,7 @@
 class CWallet;
 class CBlock;
 class CBlockIndex;
+class CBlockLocatorHeader;
 class CKeyItem;
 class CReserveKey;
 class COutPoint;
@@ -59,7 +60,11 @@ inline int64_t FutureDrift(int64_t nTime) { return nTime + 10 * 60; } // up to 1
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
 extern CCriticalSection cs_supersend;
+
+/// New Map System ///
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;
+extern std::map<uint256, CBlockLocatorHeader*> mapBlockLocatorIndex;
+
 extern std::set<std::pair<COutPoint, unsigned int> > setStakeSeen;
 extern CBlockIndex* pindexGenesisBlock;
 extern unsigned int nStakeMinAge;
@@ -108,7 +113,6 @@ bool CheckDiskSpace(uint64_t nAdditionalBytes=0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
-void PrintBlockTree();
 CBlockIndex* FindBlockByHeight(int nHeight);
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
@@ -137,6 +141,7 @@ void ResendWalletTransactions(bool fForce = false);
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 std::string GetLastAnonymousTxLog();
 std::string GetCurrentServiceNodeList();
+
 
 /** Position on disk for a particular transaction. */
 class CDiskTxPos
@@ -864,6 +869,12 @@ public:
         SetNull();
     }
 
+    CBlock(unsigned int nFile, unsigned int nBlockPos)
+    {
+        SetNull();
+        ReadFromDisk(nFile, nBlockPos, true);
+    }
+
     IMPLEMENT_SERIALIZE
     (
         READWRITE(this->nVersion);
@@ -1042,10 +1053,12 @@ public:
             filein.nType |= SER_BLOCKHEADERONLY;
 
         // Read block
-        try {
+        try
+        {
             filein >> *this;
         }
-        catch (std::exception &e) {
+        catch (std::exception &e)
+        {
             return error("%s() : deserialize or I/O error", __PRETTY_FUNCTION__);
         }
 
@@ -1434,7 +1447,29 @@ public:
     }
 };
 
+class CBlockLocatorHeader
+{
+public:
+    uint256 hash;
+    CBlockLocatorHeader* pprev;
+    CBlockLocatorHeader* pnext;
+    int nHeight;
+    unsigned int nFile;
+    unsigned int nBlockPos;
 
+    CBlockLocatorHeader()
+    {
+    }
+
+    uint256 GetBlockHash()
+    {
+        return this->hash;
+    }
+    bool IsInMainChain() const
+    {
+        return (pnext || (this->GetBlockHash() == pindexBest->GetBlockHash()) );
+    }
+};
 
 
 
@@ -1464,7 +1499,17 @@ public:
     {
         std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
         if (mi != mapBlockIndex.end())
+        {
             Set((*mi).second);
+        }
+        else
+        {
+            std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(hashBlock);
+            if (iter != mapBlockLocatorIndex.end())
+            {
+                Set((*mi).second);
+            }
+        }
     }
 
     CBlockLocator(const std::vector<uint256>& vHaveIn)
@@ -1499,12 +1544,42 @@ public:
 
             // Exponentially larger steps back
             for (int i = 0; pindex && i < nStep; i++)
+            {
+                std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(pindex->pprev->GetBlockHash());
+                if (mi == mapBlockIndex.end())
+                {
+                    std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(pindex->pprev->GetBlockHash());
+                    if(iter != mapBlockLocatorIndex.end())
+                    {
+                        Set((*iter).second);
+                    }
+                }
+                pindex = pindex->pprev;
+
+            }
+            if (vHave.size() > 10)
+                nStep *= 2;
+        }
+        vHave.push_back((!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
+    }
+
+    void Set(const CBlockLocatorHeader* pindex)
+    {
+        vHave.clear();
+        int nStep = 1;
+        while (pindex)
+        {
+            vHave.push_back(pindex->GetBlockHash());
+
+            // Exponentially larger steps back
+            for (int i = 0; pindex && i < nStep; i++)
                 pindex = pindex->pprev;
             if (vHave.size() > 10)
                 nStep *= 2;
         }
         vHave.push_back((!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
     }
+
 
     int GetDistanceBack()
     {
@@ -1520,6 +1595,16 @@ public:
                 if (pindex->IsInMainChain())
                     return nDistance;
             }
+            if(mi == mapBlockIndex.end())
+            {
+                std::map<uint256, CBlockLocatorHeader*>::iterator mi = mapBlockLocatorIndex.find(hash);
+                if (mi != mapBlockLocatorIndex.end())
+                {
+                    CBlockLocatorHeader* pindex = (*mi).second;
+                    if (pindex->IsInMainChain())
+                        return nDistance;
+                }
+            }
             nDistance += nStep;
             if (nDistance > 10)
                 nStep *= 2;
@@ -1527,6 +1612,7 @@ public:
         return nDistance;
     }
 
+    /// this needs to be fixed
     CBlockIndex* GetBlockIndex()
     {
         // Find the first block the caller has in the main chain
@@ -1554,6 +1640,18 @@ public:
                 CBlockIndex* pindex = (*mi).second;
                 if (pindex->IsInMainChain())
                     return hash;
+            }
+            else if(mi == mapBlockIndex.end())
+            {
+                std::map<uint256, CBlockLocatorHeader*>::iterator mi = mapBlockLocatorIndex.find(hash);
+                if (mi != mapBlockLocatorIndex.end())
+                {
+                    CBlockLocatorHeader* pindex = (*mi).second;
+                    if (pindex->IsInMainChain())
+                    {
+                        return hash;
+                    }
+                }
             }
         }
         return (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);

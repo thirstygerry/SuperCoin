@@ -5,6 +5,7 @@
 
 #include <boost/assign/list_of.hpp> // for 'map_list_of()'
 #include <boost/foreach.hpp>
+#include <map>
 
 #include "checkpoints.h"
 
@@ -89,7 +90,21 @@ namespace Checkpoints
     {
         LOCK(cs_hashSyncCheckpoint);
         if (!mapBlockIndex.count(hashSyncCheckpoint))
-            error("GetSyncCheckpoint: block index missing for current sync-checkpoint %s", hashSyncCheckpoint.ToString().c_str());
+        {
+            if(!mapBlockLocatorIndex.count(hashSyncCheckpoint))
+            {
+                error("GetSyncCheckpoint: block index missing for current sync-checkpoint %s", hashSyncCheckpoint.ToString().c_str());
+            }
+            else
+            {
+                std::map<uint256, CBlockLocatorHeader* >::iterator iter = mapBlockLocatorIndex.find(hashSyncCheckpoint);
+                CBlockLocatorHeader* header = (*iter).second;
+                CBlock block(header->nFile, header->nBlockPos);
+                CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+                index->nHeight = header->nHeight;
+                return index;
+            }
+        }
         else
             return mapBlockIndex[hashSyncCheckpoint];
         return NULL;
@@ -98,13 +113,34 @@ namespace Checkpoints
     // ppcoin: only descendant of current sync-checkpoint is allowed
     bool ValidateSyncCheckpoint(uint256 hashCheckpoint)
     {
-        if (!mapBlockIndex.count(hashSyncCheckpoint))
-            return error("ValidateSyncCheckpoint: block index missing for current sync-checkpoint %s", hashSyncCheckpoint.ToString().c_str());
-        if (!mapBlockIndex.count(hashCheckpoint))
-            return error("ValidateSyncCheckpoint: block index missing for received sync-checkpoint %s", hashCheckpoint.ToString().c_str());
+        CBlockIndex* pindexSyncCheckpoint;
+        CBlockIndex* pindexCheckpointRecv;
+        if (mapBlockIndex.count(hashSyncCheckpoint) && mapBlockIndex.count(hashCheckpoint))
+        {
+            pindexSyncCheckpoint = mapBlockIndex[hashSyncCheckpoint];
+            pindexCheckpointRecv = mapBlockIndex[hashCheckpoint];
+        }
+        else if(mapBlockLocatorIndex.count(hashSyncCheckpoint) && mapBlockLocatorIndex.count(hashCheckpoint))
+        {
+            std::map<uint256, CBlockLocatorHeader* >::iterator hashIter = mapBlockLocatorIndex.find(hashSyncCheckpoint);
+            std::map<uint256, CBlockLocatorHeader* >::iterator syncIter = mapBlockLocatorIndex.find(hashCheckpoint);
 
-        CBlockIndex* pindexSyncCheckpoint = mapBlockIndex[hashSyncCheckpoint];
-        CBlockIndex* pindexCheckpointRecv = mapBlockIndex[hashCheckpoint];
+            CBlockLocatorHeader* hashHeader = (*hashIter).second;
+            CBlock hashBlock(hashHeader->nFile, hashHeader->nBlockPos);
+            CBlockIndex* hashIndex = new CBlockIndex(hashHeader->nFile, hashHeader->nBlockPos, hashBlock);
+            hashIndex->nHeight = hashHeader->nHeight;
+            pindexSyncCheckpoint = hashIndex;
+
+            CBlockLocatorHeader* syncHeader = (*syncIter).second;
+            CBlock syncBlock(syncHeader->nFile, syncHeader->nBlockPos);
+            CBlockIndex* syncIndex = new CBlockIndex(syncHeader->nFile, syncHeader->nBlockPos, syncBlock);
+            syncIndex->nHeight = syncHeader->nHeight;
+            pindexSyncCheckpoint = syncIndex;
+        }
+        else
+        {
+            return error("ValidateSyncCheckpoint: block(s) index missing for sync-checkpoint");
+        }
 
 		if(pindexCheckpointRecv->nHeight < MAX_NO_SYNC_CHECKPOINT)
 			return false;
@@ -157,6 +193,7 @@ namespace Checkpoints
         return true;
     }
 
+    /// this might need fixing
     bool AcceptPendingSyncCheckpoint()
     {
         LOCK(cs_hashSyncCheckpoint);
@@ -197,6 +234,7 @@ namespace Checkpoints
             }
             return true;
         }
+        printf("hash for pending checkpoint not in BlockIndex, probably in legacy blocks, need to add check there if i ever get this error \n");
         return false;
     }
 
@@ -213,15 +251,34 @@ namespace Checkpoints
     // Check against synchronized checkpoint
     bool CheckSync(const uint256& hashBlock, const CBlockIndex* pindexPrev)
     {
-        if (fTestNet) return true; // Testnet has no checkpoints
+        if (fTestNet)
+        {
+            return true; // Testnet has no checkpoints
+        }
         int nHeight = pindexPrev->nHeight + 1;
 		if(nHeight < MAX_NO_SYNC_CHECKPOINT)
 			return true;
 
         LOCK(cs_hashSyncCheckpoint);
         // sync-checkpoint should always be accepted block
-        assert(mapBlockIndex.count(hashSyncCheckpoint));
-        const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
+        const CBlockIndex* pindexSync;
+        if(mapBlockIndex.count(hashSyncCheckpoint))
+        {
+            pindexSync= mapBlockIndex[hashSyncCheckpoint];
+        }
+        else if(mapBlockLocatorIndex.count(hashSyncCheckpoint))
+        {
+            std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(hashSyncCheckpoint);
+            CBlockLocatorHeader* header = (*iter).second;
+            CBlock block(header->nFile, header->nBlockPos);
+            CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+            index->nHeight = header->nHeight;
+            pindexSync = index;
+        }
+        else
+        {
+            assert(mapBlockIndex.count(hashSyncCheckpoint));
+        }
 
 		if(pindexSync->nHeight < MAX_NO_SYNC_CHECKPOINT)
 			return true;
@@ -238,7 +295,8 @@ namespace Checkpoints
         }
         if (nHeight == pindexSync->nHeight && hashBlock != hashSyncCheckpoint)
             return false; // same height with sync-checkpoint
-        if (nHeight < pindexSync->nHeight && !mapBlockIndex.count(hashBlock))
+        bool IsInAMap = !mapBlockIndex.count(hashBlock) || !mapBlockLocatorIndex.count(hashBlock);
+        if (nHeight < pindexSync->nHeight &&  IsInAMap)
             return false; // lower height than sync-checkpoint
         return true;
     }
@@ -285,7 +343,7 @@ namespace Checkpoints
         BOOST_REVERSE_FOREACH(const MapCheckpoints::value_type& i, mapCheckpoints)
         {
             const uint256& hash = i.second;
-            if (mapBlockIndex.count(hash) && mapBlockIndex[hash]->IsInMainChain())
+            if ((mapBlockIndex.count(hash) && mapBlockIndex[hash]->IsInMainChain()) || mapBlockLocatorIndex.count(hash))
             {
                 if (!WriteSyncCheckpoint(hash))
                     return error("ResetSyncCheckpoint: failed to write sync checkpoint %s", hash.ToString().c_str());
@@ -297,11 +355,14 @@ namespace Checkpoints
         return false;
     }
 
+    /// might need to have this check to see if its in legacy blocks as well
     void AskForPendingSyncCheckpoint(CNode* pfrom)
     {
         LOCK(cs_hashSyncCheckpoint);
         if (pfrom && hashPendingCheckpoint != 0 && (!mapBlockIndex.count(hashPendingCheckpoint)) && (!mapOrphanBlocks.count(hashPendingCheckpoint)))
+        {
             pfrom->AskFor(CInv(MSG_BLOCK, hashPendingCheckpoint));
+        }
     }
 
     bool SetCheckpointPrivKey(std::string strPrivKey)
@@ -355,15 +416,19 @@ namespace Checkpoints
         return true;
     }
 
+    /// might need to have this check legacy blocks as well
     // Is the sync-checkpoint outside maturity window?
     bool IsMatureSyncCheckpoint()
     {
         LOCK(cs_hashSyncCheckpoint);
         // sync-checkpoint should always be accepted block
-        assert(mapBlockIndex.count(hashSyncCheckpoint));
-        const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
-        return (nBestHeight >= pindexSync->nHeight + nCoinbaseMaturity ||
-                pindexSync->GetBlockTime() + nStakeMinAge < GetAdjustedTime());
+        if(mapBlockIndex.count(hashSyncCheckpoint))
+        {
+            const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
+            return (nBestHeight >= pindexSync->nHeight + nCoinbaseMaturity || pindexSync->GetBlockTime() + nStakeMinAge < GetAdjustedTime());
+        }
+        printf("if i get this error i need to revisit IsMatureSyncCheckpoint \n");
+        return false;
     }
 }
 
@@ -394,7 +459,7 @@ bool CSyncCheckpoint::ProcessSyncCheckpoint(CNode* pfrom)
         return false;
 
     LOCK(Checkpoints::cs_hashSyncCheckpoint);
-    if (!mapBlockIndex.count(hashCheckpoint))
+    if (!mapBlockIndex.count(hashCheckpoint) && !mapBlockLocatorIndex.count(hashCheckpoint))
     {
         // We haven't received the checkpoint chain, keep the checkpoint as pending
         Checkpoints::hashPendingCheckpoint = hashCheckpoint;
@@ -415,18 +480,25 @@ bool CSyncCheckpoint::ProcessSyncCheckpoint(CNode* pfrom)
         return false;
 
     CTxDB txdb;
-    CBlockIndex* pindexCheckpoint = mapBlockIndex[hashCheckpoint];
-    if (!pindexCheckpoint->IsInMainChain())
+    if(mapBlockIndex.count(hashCheckpoint))
     {
-        // checkpoint chain received but not yet main chain
-        CBlock block;
-        if (!block.ReadFromDisk(pindexCheckpoint))
-            return error("ProcessSyncCheckpoint: ReadFromDisk failed for sync checkpoint %s", hashCheckpoint.ToString().c_str());
-        if (!block.SetBestChain(txdb, pindexCheckpoint))
+        CBlockIndex* pindexCheckpoint = mapBlockIndex[hashCheckpoint];
+        if (!pindexCheckpoint->IsInMainChain())
         {
-            Checkpoints::hashInvalidCheckpoint = hashCheckpoint;
-            return error("ProcessSyncCheckpoint: SetBestChain failed for sync checkpoint %s", hashCheckpoint.ToString().c_str());
+            // checkpoint chain received but not yet main chain
+            CBlock block;
+            if (!block.ReadFromDisk(pindexCheckpoint))
+                return error("ProcessSyncCheckpoint: ReadFromDisk failed for sync checkpoint %s", hashCheckpoint.ToString().c_str());
+            if (!block.SetBestChain(txdb, pindexCheckpoint))
+            {
+                Checkpoints::hashInvalidCheckpoint = hashCheckpoint;
+                return error("ProcessSyncCheckpoint: SetBestChain failed for sync checkpoint %s", hashCheckpoint.ToString().c_str());
+            }
         }
+    }
+    else if(!mapBlockLocatorIndex.count(hashCheckpoint)) // it it wasnt in mapBlockIndex or mapLegacyBlocks do this
+    {
+        return error("ProcessSyncCheckpoint failure due to neither map having the hash \n");
     }
 
     if (!Checkpoints::WriteSyncCheckpoint(hashCheckpoint))

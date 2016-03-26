@@ -55,7 +55,8 @@ void WalletTxToJSON(const CWalletTx& wtx, Object& entry)
     {
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
-        entry.push_back(Pair("blocktime", (boost::int64_t)(mapBlockIndex[wtx.hashBlock]->nTime)));
+        /// assume time is broken due to new mapping system
+        //entry.push_back(Pair("blocktime", (boost::int64_t)(mapBlockIndex[wtx.hashBlock]->nTime)));
     }
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
@@ -1345,9 +1346,22 @@ Value gettransaction(const Array& params, bool fHelp)
             {
                 entry.push_back(Pair("blockhash", hashBlock.GetHex()));
                 map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+                map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(hashBlock);
                 if (mi != mapBlockIndex.end() && (*mi).second)
                 {
                     CBlockIndex* pindex = (*mi).second;
+                    if (pindex->IsInMainChain())
+                        entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
+                    else
+                        entry.push_back(Pair("confirmations", 0));
+                }
+                else if(iter != mapBlockLocatorIndex.end() && (*iter).second)
+                {
+                    CBlockLocatorHeader* header = (*iter).second;
+                    CBlock block(header->nFile, header->nBlockPos);
+                    CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+                    index->nHeight = header->nHeight;
+                    CBlockIndex* pindex = index;
                     if (pindex->IsInMainChain())
                         entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
                     else

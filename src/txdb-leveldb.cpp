@@ -324,6 +324,26 @@ static CBlockIndex *InsertBlockIndex(uint256 hash)
     return pindexNew;
 }
 
+static CBlockLocatorHeader *InsertLocatorIndex(uint256 hash)
+{
+    if (hash == 0)
+        return NULL;
+
+    // Return existing
+    map<uint256, CBlockLocatorHeader*>::iterator mi = mapBlockLocatorIndex.find(hash);
+    if (mi != mapBlockLocatorIndex.end())
+        return (*mi).second;
+
+    // Create new
+    CBlockLocatorHeader* pindexNew = new CBlockLocatorHeader();
+    if (!pindexNew)
+        throw runtime_error("LoadBlockIndex() : new CBlockLocatorHeader failed");
+    mi = mapBlockLocatorIndex.insert(make_pair(hash, pindexNew)).first;
+    pindexNew->hash = &((*mi).first);
+
+    return pindexNew;
+}
+
 bool CTxDB::LoadBlockIndex()
 {
     if (mapBlockIndex.size() > 0) {
@@ -376,6 +396,15 @@ bool CTxDB::LoadBlockIndex()
         pindexNew->nTime          = diskindex.nTime;
         pindexNew->nBits          = diskindex.nBits;
         pindexNew->nNonce         = diskindex.nNonce;
+
+        /// generates the locator headers should mirror the blockindex built above
+        CBlockLocatorHeader* plocatorNew = InsertLocatorIndex(blockHash);
+        plocatorNew->pprev               = InsertLocatorIndex(diskindex.hashPrev);
+        plocatorNew->pnext               = InsertLocatorIndex(diskindex.hashNext);
+        plocatorNew->nHeight             = diskindex.nHeight;
+        plocatorNew->nBlockPos           = diskindex.nBlockPos;
+        plocatorNew->nFile               = diskindex.nFile;
+
 
         // Watch for genesis block
         if (pindexGenesisBlock == NULL && blockHash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))

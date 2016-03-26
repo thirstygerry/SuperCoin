@@ -35,7 +35,12 @@ CCriticalSection cs_supersend;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
+
+/** new Block indexing structure **/
+//requires more maps but uses MUCH less memory
 map<uint256, CBlockIndex*> mapBlockIndex;
+map<uint256, CBlockLocatorHeader*> mapBlockLocatorIndex; // used when an index is needed but is too old to be in mapBlockIndex
+
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); 
@@ -98,6 +103,7 @@ static const int checkpointPoWHeight[NUM_OF_POW_CHECKPOINT][2] =
 extern enum Checkpoints::CPMode CheckpointsMode;
 
 extern int64_t ValueFromAmountAsInt(int64_t amount);
+
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -471,11 +477,31 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 
     // Is the tx in a block that's in the main chain
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(hashBlock);
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
+    {
+        if( iter == mapBlockLocatorIndex.end())
+        {
+            return 0;
+        }
+    }
+    CBlockIndex* pindex;
+    if(mi != mapBlockIndex.end())
+    {
+        pindex = (*mi).second;
+    }
+    if( iter != mapBlockLocatorIndex.end())
+    {
+        CBlockLocatorHeader* header = (*iter).second;
+        CBlock block(header->nFile, header->nBlockPos);
+        CBlockIndex* index = new CBlockIndex(header->nFile,header->nBlockPos, block);
+        index->nHeight = header->nHeight;
+        pindex = index;
+    }
     if (!pindex || !pindex->IsInMainChain())
+    {
         return 0;
+    }
 
     return pindexBest->nHeight - pindex->nHeight + 1;
 }
@@ -804,11 +830,31 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
 
     // Find the block it claims to be in
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(hashBlock);
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
+    {
+        if( iter == mapBlockLocatorIndex.end())
+        {
+            return 0;
+        }
+    }
+    CBlockIndex* pindex;
+    if(mi != mapBlockIndex.end())
+    {
+        pindex = (*mi).second;
+    }
+    if( iter != mapBlockLocatorIndex.end())
+    {
+        CBlockLocatorHeader* header = (*iter).second;
+        CBlock block(header->nFile, header->nBlockPos);
+        CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+        index->nHeight;
+        pindex = index;
+    }
     if (!pindex || !pindex->IsInMainChain())
+    {
         return 0;
+    }
 
     // Make sure the merkle branch connects to this block
     if (!fMerkleVerified)
@@ -895,11 +941,31 @@ int CTxIndex::GetDepthInMainChain() const
         return 0;
     // Find the block in the index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
+    std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(block.GetHash());
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
+    {
+        if( iter == mapBlockLocatorIndex.end())
+        {
+            return 0;
+        }
+    }
+    CBlockIndex* pindex;
+    if(mi != mapBlockIndex.end())
+    {
+        pindex = (*mi).second;
+    }
+    if( iter != mapBlockLocatorIndex.end())
+    {
+        CBlockLocatorHeader* header = (*iter).second;
+        CBlock block(header->nFile, header->nBlockPos);
+        CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+        index->nHeight = header->nHeight;
+        pindex = index;
+    }
     if (!pindex || !pindex->IsInMainChain())
+    {
         return 0;
+    }
     return 1 + nBestHeight - pindex->nHeight;
 }
 
@@ -2223,7 +2289,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
 {
     // Check for duplicate
     uint256 hash = GetHash();
-    if (mapBlockIndex.count(hash))
+    if (mapBlockIndex.count(hash) || mapBlockLocatorIndex.count(hash))
         return error("AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
 
     // Construct new block index object
@@ -2231,6 +2297,8 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     if (!pindexNew)
         return error("AddToBlockIndex() : new CBlockIndex failed");
     pindexNew->phashBlock = &hash;
+
+    /// wont need to use MapLegacyBlocks because last block should always be in mapBlockIndex
     map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
     if (miPrev != mapBlockIndex.end())
     {
@@ -2383,10 +2451,10 @@ bool CBlock::AcceptBlock()
 {
     // Check for duplicate
     uint256 hash = GetHash();
-    if (mapBlockIndex.count(hash))
+    if (mapBlockIndex.count(hash) || mapBlockLocatorIndex.count(hash))
         return error("AcceptBlock() : block already in mapBlockIndex");
 
-    // Get prev block index
+    // Get prev block index should always be mapBlockIndex
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
     if (mi == mapBlockIndex.end())
         return DoS(10, error("AcceptBlock() : prev block not found"));
@@ -2520,7 +2588,7 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
     // Check for duplicate
     uint256 hash = pblock->GetHash();
-    if (mapBlockIndex.count(hash))
+    if (mapBlockIndex.count(hash) || mapBlockLocatorIndex.count(hash))
         return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
         return error("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
@@ -2878,81 +2946,6 @@ bool LoadBlockIndex(bool fAllowNew)
 }
 
 
-
-void PrintBlockTree()
-{
-    // pre-compute tree structure
-    map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
-    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
-    {
-        CBlockIndex* pindex = (*mi).second;
-        mapNext[pindex->pprev].push_back(pindex);
-        // test
-        //while (rand() % 3 == 0)
-        //    mapNext[pindex->pprev].push_back(pindex);
-    }
-
-    vector<pair<int, CBlockIndex*> > vStack;
-    vStack.push_back(make_pair(0, pindexGenesisBlock));
-
-    int nPrevCol = 0;
-    while (!vStack.empty())
-    {
-        int nCol = vStack.back().first;
-        CBlockIndex* pindex = vStack.back().second;
-        vStack.pop_back();
-
-        // print split or gap
-        if (nCol > nPrevCol)
-        {
-            for (int i = 0; i < nCol-1; i++)
-                printf("| ");
-            printf("|\\\n");
-        }
-        else if (nCol < nPrevCol)
-        {
-            for (int i = 0; i < nCol; i++)
-                printf("| ");
-            printf("|\n");
-       }
-        nPrevCol = nCol;
-
-        // print columns
-        for (int i = 0; i < nCol; i++)
-            printf("| ");
-
-        // print item
-        CBlock block;
-        block.ReadFromDisk(pindex);
-        printf("%d (%u,%u) %s  %08x  %s  mint %7s  tx %"PRIszu"",
-            pindex->nHeight,
-            pindex->nFile,
-            pindex->nBlockPos,
-            block.GetHash().ToString().c_str(),
-            block.nBits,
-            DateTimeStrFormat("%x %H:%M:%S", block.GetBlockTime()).c_str(),
-            FormatMoney(pindex->nMint).c_str(),
-            block.vtx.size());
-
-        PrintWallets(block);
-
-        // put the main time-chain first
-        vector<CBlockIndex*>& vNext = mapNext[pindex];
-        for (unsigned int i = 0; i < vNext.size(); i++)
-        {
-            if (vNext[i]->pnext)
-            {
-                swap(vNext[0], vNext[i]);
-                break;
-            }
-        }
-
-        // iterate children
-        for (unsigned int i = 0; i < vNext.size(); i++)
-            vStack.push_back(make_pair(nCol+i, vNext[i]));
-    }
-}
-
 bool LoadExternalBlockFile(FILE* fileIn)
 {
     int64_t nStart = GetTimeMillis();
@@ -3098,8 +3091,7 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
         }
 
     case MSG_BLOCK:
-        return mapBlockIndex.count(inv.hash) ||
-               mapOrphanBlocks.count(inv.hash);
+        return mapBlockIndex.count(inv.hash) || mapBlockLocatorIndex.count(inv.hash) || mapOrphanBlocks.count(inv.hash);
     }
     // Don't know what it is, just say we already got one
     return true;
@@ -3364,15 +3356,21 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
             if (!fAlreadyHave)
                 pfrom->AskFor(inv);
-            else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash)) {
+            else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash))
+            {
                 pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.hash]));
-            } else if (nInv == nLastBlock) {
+            }
+            else if (nInv == nLastBlock)
+            {
                 // In case we are on a very long side-chain, it is possible that we already have
                 // the last block in an inv bundle sent in response to getblocks. Try to detect
                 // this situation and push another getblocks to continue.
-                pfrom->PushGetBlocks(mapBlockIndex[inv.hash], uint256(0));
-                if (fDebug)
-                    printf("force request: %s\n", inv.ToString().c_str());
+                if(mapBlockIndex.count(inv.hash))
+                {
+                    pfrom->PushGetBlocks(mapBlockIndex[inv.hash], uint256(0));
+                    if (fDebug)
+                        printf("force request: %s\n", inv.ToString().c_str());
+                }
             }
 
             // Track requests for our stuff
@@ -3405,23 +3403,29 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             {
                 // Send block from disk
                 map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
+                map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(inv.hash);
+                CBlock block;
                 if (mi != mapBlockIndex.end())
                 {
-                    CBlock block;
                     block.ReadFromDisk((*mi).second);
-                    pfrom->PushMessage("block", block);
+                }
+                else if(mi == mapBlockIndex.end() && iter != mapBlockLocatorIndex.end())
+                {
+                    CBlockLocatorHeader* header =(*iter).second;
+                    block.ReadFromDisk(header->nFile, header->nBlockPos);
+                }
+                pfrom->PushMessage("block", block);
 
-                    // Trigger them to send a getblocks request for the next batch of inventory
-                    if (inv.hash == pfrom->hashContinue)
-                    {
-                        // ppcoin: send latest proof-of-work block to allow the
-                        // download node to accept as orphan (proof-of-stake 
-                        // block might be rejected by stake connection check)
-                        vector<CInv> vInv;
-                        vInv.push_back(CInv(MSG_BLOCK, GetLastBlockIndex(pindexBest, false)->GetBlockHash()));
-                        pfrom->PushMessage("inv", vInv);
-                        pfrom->hashContinue = 0;
-                    }
+                // Trigger them to send a getblocks request for the next batch of inventory
+                if (inv.hash == pfrom->hashContinue)
+                {
+                    // ppcoin: send latest proof-of-work block to allow the
+                    // download node to accept as orphan (proof-of-stake
+                    // block might be rejected by stake connection check)
+                    vector<CInv> vInv;
+                    vInv.push_back(CInv(MSG_BLOCK, GetLastBlockIndex(pindexBest, false)->GetBlockHash()));
+                    pfrom->PushMessage("inv", vInv);
+                    pfrom->hashContinue = 0;
                 }
             }
             else if (inv.IsKnownType())

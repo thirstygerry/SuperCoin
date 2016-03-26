@@ -240,7 +240,9 @@ Value getblock(const Array& params, bool fHelp)
     uint256 hash(strHash);
 
     if (mapBlockIndex.count(hash) == 0)
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found, probably not in map due to use of new map system, if you know "
+                                                       "this is in the main chain and is an older block"
+                                                       "use the full node mapping system");
 
     CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hash];
@@ -263,9 +265,15 @@ Value getblockbynumber(const Array& params, bool fHelp)
 
     CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
-    while (pblockindex->nHeight > nHeight)
+    while (pblockindex->nHeight > nHeight && mapBlockIndex.count(pblockindex->pprev->GetBlockHash()))
         pblockindex = pblockindex->pprev;
 
+    if(!mapBlockIndex.count(pblockindex->pprev->GetBlockHash()))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found, probably not in map due to use of new map system, if you know "
+                                                       "this is in the main chain and is an older block"
+                                                       "use the full node mapping system");
+    }
     uint256 hash = *pblockindex->phashBlock;
 
     pblockindex = mapBlockIndex[hash];
@@ -286,6 +294,11 @@ Value getcheckpoint(const Array& params, bool fHelp)
     CBlockIndex* pindexCheckpoint;
 
     result.push_back(Pair("synccheckpoint", Checkpoints::hashSyncCheckpoint.ToString().c_str()));
+    if(!mapBlockIndex.count(Checkpoints::hashSyncCheckpoint))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "checkpoint not found, probably not in available  map due to use of new map system, if you know "
+                                                       "this is in the main chain and is an older block use the full node mapping system");
+    }
     pindexCheckpoint = mapBlockIndex[Checkpoints::hashSyncCheckpoint];
     result.push_back(Pair("height", pindexCheckpoint->nHeight));
     result.push_back(Pair("timestamp", DateTimeStrFormat(pindexCheckpoint->GetBlockTime()).c_str()));

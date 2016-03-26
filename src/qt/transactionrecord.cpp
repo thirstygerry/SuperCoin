@@ -163,7 +163,21 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
     CBlockIndex* pindex = NULL;
     std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(wtx.hashBlock);
     if (mi != mapBlockIndex.end())
+    {
         pindex = (*mi).second;
+    }
+    else
+    {
+        std::map<uint256, CBlockLocatorHeader*>::iterator iter = mapBlockLocatorIndex.find(wtx.hashBlock);
+        if(iter != mapBlockLocatorIndex.end())
+        {
+            CBlockLocatorHeader* header = (*iter).second;
+            CBlock block(header->nFile,header->nBlockPos);
+            CBlockIndex* index = new CBlockIndex(header->nFile, header->nBlockPos, block);
+            index->nHeight = header->nHeight;
+            pindex = index;
+        }
+    }
 
     // Sort order, unrecorded transactions sort to the top
     status.sortKey = strprintf("%010d-%01d-%010u-%03d",
