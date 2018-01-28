@@ -35,8 +35,8 @@ PoS
 - Super-PoS-Blocks!! Only for the 1st year: 
 	1 chance in 5 million coin-day (about 0.5 - 10 times per day depends on the PoS generation), that a super-PoS-block of 1024 coins on top of your regular PoS will be generated.
 
-- Total PoW coins will be 50,000,000.
-- Total coins (including PoS) will be about 150,000,000.
+- Total coins will be 50,000,000.
+
 
 - 5% of total PoW coins will be used for mini-IPO
 
